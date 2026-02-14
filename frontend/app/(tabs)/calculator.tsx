@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, TextInput, Modal, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, TextInput, Modal } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Animated, { useSharedValue, useAnimatedStyle, withTiming } from 'react-native-reanimated';
-import { colors, typography, spacing, DISCLAIMER } from '../../src/theme';
+import { useTheme } from '../../src/context/ThemeContext';
+import { typography, spacing, DISCLAIMER } from '../../src/theme';
 import { Storage, KEYS } from '../../src/utils/storage';
 import { useLocalSearchParams, useFocusEffect } from 'expo-router';
 
@@ -29,35 +30,36 @@ interface Preset {
   doseMcg: number;
 }
 
-function SyringeVisual({ fillPct, units, unitsToDraw }: { fillPct: number; units: number; unitsToDraw: number }) {
+function SyringeVisual({ fillPct, units, unitsToDraw, colors }: { fillPct: number; units: number; unitsToDraw: number; colors: any }) {
   const fillHeight = useSharedValue(0);
   useEffect(() => { fillHeight.value = withTiming(Math.min(fillPct, 100), { duration: 400 }); }, [fillPct]);
   const animStyle = useAnimatedStyle(() => ({ height: `${fillHeight.value}%` }));
   const ticks = Array.from({ length: 5 }, (_, i) => ((i + 1) / 5) * units);
   return (
-    <View style={styles.syringeContainer}>
-      <View style={styles.syringeBody}>
-        <View style={styles.syringeBarrel}>
+    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginVertical: spacing.xl, gap: spacing.xl }}>
+      <View style={{ alignItems: 'center' }}>
+        <View style={{ width: 48, height: 200, backgroundColor: colors.surfaceHighlight, borderRadius: 8, borderWidth: 2, borderColor: colors.border, overflow: 'hidden', justifyContent: 'flex-end', position: 'relative' }}>
           {ticks.map((tick, i) => (
-            <View key={i} style={[styles.tick, { bottom: `${((i + 1) / 5) * 100}%` }]}>
-              <View style={styles.tickLine} />
-              <Text style={styles.tickLabel}>{tick}u</Text>
+            <View key={i} style={{ position: 'absolute', left: -36, bottom: `${((i + 1) / 5) * 100}%`, flexDirection: 'row', alignItems: 'center' }}>
+              <View style={{ width: 8, height: 1, backgroundColor: colors.border }} />
+              <Text style={{ ...typography.caption, color: colors.textTertiary, fontSize: 10, marginLeft: 2, textTransform: 'none' }}>{tick}u</Text>
             </View>
           ))}
-          <Animated.View style={[styles.syringeFill, animStyle]} />
+          <Animated.View style={[{ width: '100%', backgroundColor: colors.accent, borderTopLeftRadius: 2, borderTopRightRadius: 2, opacity: 0.8 }, animStyle]} />
         </View>
-        <View style={styles.syringeNeedle} />
+        <View style={{ width: 4, height: 24, backgroundColor: colors.textTertiary, borderRadius: 2, marginTop: -1 }} />
       </View>
-      <View style={styles.syringeInfo}>
-        <Text style={styles.drawLabel}>Draw to</Text>
-        <Text testID="units-to-draw" style={styles.drawValue}>{unitsToDraw.toFixed(1)}</Text>
-        <Text style={styles.drawUnit}>units</Text>
+      <View style={{ alignItems: 'center' }}>
+        <Text style={{ ...typography.caption, color: colors.textTertiary }}>Draw to</Text>
+        <Text testID="units-to-draw" style={{ ...typography.display, color: colors.dosageHighlight, fontSize: 56 }}>{unitsToDraw.toFixed(1)}</Text>
+        <Text style={{ ...typography.bodyBase, color: colors.textSecondary }}>units</Text>
       </View>
     </View>
   );
 }
 
 export default function CalculatorScreen() {
+  const { colors } = useTheme();
   const params = useLocalSearchParams<{ vialMg?: string; doseMcg?: string; bacWaterMl?: string }>();
   const [syringeIdx, setSyringeIdx] = useState(2);
   const [vialMg, setVialMg] = useState(10);
@@ -113,6 +115,8 @@ export default function CalculatorScreen() {
     if (showCustomModal === 'dose' && customDose) setDoseMcg(parseFloat(customDose) * (parseFloat(customDose) < 100 ? 1000 : 1));
     setShowCustomModal(null);
   };
+
+  const styles = createStyles(colors);
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -188,7 +192,7 @@ export default function CalculatorScreen() {
           </View>
         )}
 
-        <SyringeVisual fillPct={fillPct} units={syringe.units} unitsToDraw={unitsToDraw} />
+        <SyringeVisual fillPct={fillPct} units={syringe.units} unitsToDraw={unitsToDraw} colors={colors} />
 
         <View style={styles.resultsGrid}>
           <View style={styles.resultCard}>
@@ -261,7 +265,7 @@ export default function CalculatorScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background },
   container: { flex: 1 },
   content: { padding: spacing.lg, paddingBottom: 120 },
@@ -277,18 +281,6 @@ const styles = StyleSheet.create({
   optionTextActive: { color: colors.primaryForeground, fontWeight: '700' },
   warningBanner: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(239,71,111,0.15)', padding: spacing.md, borderRadius: 12, marginTop: spacing.md, gap: 8 },
   warningText: { ...typography.bodySm, color: colors.error, flex: 1 },
-  syringeContainer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginVertical: spacing.xl, gap: spacing.xl },
-  syringeBody: { alignItems: 'center' },
-  syringeBarrel: { width: 48, height: 200, backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 8, borderWidth: 2, borderColor: 'rgba(255,255,255,0.2)', overflow: 'hidden', justifyContent: 'flex-end', position: 'relative' },
-  syringeFill: { width: '100%', backgroundColor: colors.accent, borderTopLeftRadius: 2, borderTopRightRadius: 2, opacity: 0.8 },
-  syringeNeedle: { width: 4, height: 24, backgroundColor: 'rgba(255,255,255,0.4)', borderRadius: 2, marginTop: -1 },
-  tick: { position: 'absolute', left: -36, flexDirection: 'row', alignItems: 'center' },
-  tickLine: { width: 8, height: 1, backgroundColor: 'rgba(255,255,255,0.3)' },
-  tickLabel: { ...typography.caption, color: colors.textTertiary, fontSize: 10, marginLeft: 2, textTransform: 'none' },
-  syringeInfo: { alignItems: 'center' },
-  drawLabel: { ...typography.caption, color: colors.textTertiary },
-  drawValue: { ...typography.display, color: colors.dosageHighlight, fontSize: 56 },
-  drawUnit: { ...typography.bodyBase, color: colors.textSecondary },
   resultsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: spacing.lg },
   resultCard: { width: '47%', backgroundColor: colors.surface, borderRadius: 16, padding: spacing.md, borderWidth: 1, borderColor: colors.border },
   resultLabel: { ...typography.caption, color: colors.textTertiary },
