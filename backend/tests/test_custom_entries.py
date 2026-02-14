@@ -6,7 +6,17 @@ import pytest
 import requests
 import os
 
-BASE_URL = os.environ.get('EXPO_PUBLIC_BACKEND_URL').rstrip('/')
+# Read BASE_URL from frontend .env
+def get_backend_url():
+    env_path = '/app/frontend/.env'
+    if os.path.exists(env_path):
+        with open(env_path) as f:
+            for line in f:
+                if line.startswith('EXPO_PUBLIC_BACKEND_URL='):
+                    return line.split('=', 1)[1].strip().rstrip('/')
+    raise ValueError("EXPO_PUBLIC_BACKEND_URL not found in /app/frontend/.env")
+
+BASE_URL = get_backend_url()
 
 class TestCustomPeptides:
     """Test custom peptide CRUD operations"""
