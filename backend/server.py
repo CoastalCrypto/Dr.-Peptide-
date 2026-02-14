@@ -256,6 +256,78 @@ async def delete_preset(preset_id: str):
         raise HTTPException(status_code=404, detail="Preset not found")
     return {"message": "Deleted"}
 
+# ==================== Custom Entries ====================
+
+class CustomPeptideCreate(BaseModel):
+    name: str
+    aliases: List[str] = []
+    categories: List[str] = []
+    description: str = ""
+    mechanism: str = ""
+    dosage_low: str = ""
+    dosage_moderate: str = ""
+    dosage_higher: str = ""
+    frequency: str = ""
+    cycle_length: str = ""
+    routes: List[str] = []
+    side_effects: List[str] = []
+    contraindications: List[str] = []
+    storage: str = ""
+    default_vial_mg: float = 5
+    default_dose_mcg: float = 250
+    default_bac_water_ml: float = 2
+
+class CustomMedicationCreate(BaseModel):
+    generic_name: str
+    brand_names: List[str] = []
+    drug_class: str = ""
+    uses: List[str] = []
+    standard_dosage: str = ""
+    side_effects: List[str] = []
+    contraindications: List[str] = []
+    interactions: List[str] = []
+    timing: str = ""
+
+@api_router.post("/custom/peptides")
+async def create_custom_peptide(peptide: CustomPeptideCreate):
+    doc = peptide.dict()
+    doc["peptide_id"] = f"custom_{uuid.uuid4().hex[:12]}"
+    doc["created_at"] = datetime.now(timezone.utc).isoformat()
+    doc["is_custom"] = True
+    await db.custom_peptides.insert_one(doc)
+    return await db.custom_peptides.find_one({"peptide_id": doc["peptide_id"]}, {"_id": 0})
+
+@api_router.get("/custom/peptides")
+async def get_custom_peptides():
+    return await db.custom_peptides.find({}, {"_id": 0}).to_list(500)
+
+@api_router.delete("/custom/peptides/{peptide_id}")
+async def delete_custom_peptide(peptide_id: str):
+    result = await db.custom_peptides.delete_one({"peptide_id": peptide_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Custom peptide not found")
+    return {"message": "Deleted"}
+
+@api_router.post("/custom/medications")
+async def create_custom_medication(med: CustomMedicationCreate):
+    doc = med.dict()
+    doc["medication_id"] = f"custom_{uuid.uuid4().hex[:12]}"
+    doc["created_at"] = datetime.now(timezone.utc).isoformat()
+    doc["is_custom"] = True
+    await db.custom_medications.insert_one(doc)
+    return await db.custom_medications.find_one({"medication_id": doc["medication_id"]}, {"_id": 0})
+
+@api_router.get("/custom/medications")
+async def get_custom_medications():
+    return await db.custom_medications.find({}, {"_id": 0}).to_list(500)
+
+@api_router.delete("/custom/medications/{medication_id}")
+async def delete_custom_medication(medication_id: str):
+    result = await db.custom_medications.delete_one({"medication_id": medication_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Custom medication not found")
+    return {"message": "Deleted"}
+
 # ==================== Health Check ====================
 
 @api_router.get("/")
