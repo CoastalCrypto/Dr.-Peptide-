@@ -1,11 +1,13 @@
 import { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, TextInput, FlatList, Modal, KeyboardAvoidingView, Platform, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, TextInput, FlatList, Modal, KeyboardAvoidingView, Platform, Alert, ActivityIndicator } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter, useFocusEffect } from 'expo-router';
-import { colors, typography, spacing } from '../../src/theme';
+import { useTheme } from '../../src/context/ThemeContext';
+import { typography, spacing } from '../../src/theme';
 import { peptides as bundledPeptides, GOAL_CATEGORIES, Peptide } from '../../src/data/peptides';
 import { medications as bundledMeds, Medication } from '../../src/data/medications';
 import { Storage, KEYS } from '../../src/utils/storage';
+import { api } from '../../src/utils/api';
 
 type Tab = 'peptides' | 'medications';
 type AddType = 'peptide' | 'medication' | null;
@@ -13,6 +15,7 @@ type AddType = 'peptide' | 'medication' | null;
 const ROUTE_OPTIONS = ['Subcutaneous', 'Intramuscular', 'Oral', 'Nasal', 'Topical', 'IV', 'Sublingual'];
 
 export default function ResearchScreen() {
+  const { colors } = useTheme();
   const router = useRouter();
   const [search, setSearch] = useState('');
   const [activeTab, setActiveTab] = useState<Tab>('peptides');
@@ -20,6 +23,12 @@ export default function ResearchScreen() {
   const [customPeptides, setCustomPeptides] = useState<Peptide[]>([]);
   const [customMeds, setCustomMeds] = useState<Medication[]>([]);
   const [showAdd, setShowAdd] = useState<AddType>(null);
+  
+  // AI Web Search state
+  const [showWebSearch, setShowWebSearch] = useState(false);
+  const [webSearchQuery, setWebSearchQuery] = useState('');
+  const [webSearchResult, setWebSearchResult] = useState<string | null>(null);
+  const [webSearchLoading, setWebSearchLoading] = useState(false);
 
   // Custom peptide form
   const [cpName, setCpName] = useState('');
@@ -73,6 +82,36 @@ export default function ResearchScreen() {
       m.brandNames.some(b => b.toLowerCase().includes(s)) ||
       m.drugClass.toLowerCase().includes(s);
   });
+
+  // AI Web Search function
+  const performWebSearch = async () => {
+    if (!webSearchQuery.trim()) {
+      Alert.alert('Enter Search', 'Please enter a peptide or medication name to search.');
+      return;
+    }
+    
+    setWebSearchLoading(true);
+    setWebSearchResult(null);
+    
+    try {
+      const response = await api.post('/api/ai/web-search', {
+        query: webSearchQuery,
+        search_type: activeTab === 'peptides' ? 'peptide' : 'medication'
+      });
+      setWebSearchResult(response.result);
+    } catch (error: any) {
+      console.error('Web search error:', error);
+      Alert.alert('Search Error', error.message || 'Failed to perform web search. Please try again.');
+    } finally {
+      setWebSearchLoading(false);
+    }
+  };
+
+  const openWebSearch = () => {
+    setWebSearchQuery(search);
+    setWebSearchResult(null);
+    setShowWebSearch(true);
+  };
 
   const resetPeptideForm = () => {
     setCpName(''); setCpAliases(''); setCpCategories([]); setCpDesc(''); setCpMechanism('');
@@ -155,6 +194,8 @@ export default function ResearchScreen() {
     ]);
   };
 
+  const styles = createStyles(colors);
+
   return (
     <SafeAreaView style={styles.safe}>
       <View style={styles.container}>
@@ -176,6 +217,13 @@ export default function ResearchScreen() {
             </TouchableOpacity>
           )}
         </View>
+
+        {/* AI Web Search Button */}
+        <TouchableOpacity testID="ai-search-btn" style={styles.aiSearchBtn} onPress={openWebSearch}>
+          <MaterialCommunityIcons name="brain" size={20} color={colors.primaryForeground} />
+          <Text style={styles.aiSearchBtnText}>AI Web Search</Text>
+          <MaterialCommunityIcons name="arrow-right" size={18} color={colors.primaryForeground} />
+        </TouchableOpacity>
 
         <View style={styles.tabs}>
           <TouchableOpacity testID="tab-peptides" style={[styles.tab, activeTab === 'peptides' && styles.tabActive]} onPress={() => setActiveTab('peptides')}>
@@ -278,6 +326,86 @@ export default function ResearchScreen() {
           />
         )}
       </View>
+
+      {/* AI Web Search Modal */}
+      <Modal visible={showWebSearch} animationType="slide" transparent>
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.flex1}>
+          <View style={styles.modalOverlay}>
+            <View style={styles.webSearchModal}>
+              <View style={styles.modalHeader}>
+                <View style={styles.aiHeaderRow}>
+                  <MaterialCommunityIcons name="brain" size={24} color={colors.accent} />
+                  <Text style={styles.modalTitle}>AI Research</Text>
+                </View>
+                <TouchableOpacity onPress={() => setShowWebSearch(false)}>
+                  <MaterialCommunityIcons name="close" size={24} color={colors.textTertiary} />
+                </TouchableOpacity>
+              </View>
+              
+              <Text style={styles.aiHint}>Search for detailed information about any {activeTab === 'peptides' ? 'peptide' : 'medication'}</Text>
+              
+              <View style={styles.aiSearchInputRow}>
+                <TextInput
+                  testID="ai-search-input"
+                  style={styles.aiSearchInput}
+                  placeholder={`Enter ${activeTab === 'peptides' ? 'peptide' : 'medication'} name...`}
+                  placeholderTextColor={colors.textTertiary}
+                  value={webSearchQuery}
+                  onChangeText={setWebSearchQuery}
+                  onSubmitEditing={performWebSearch}
+                  returnKeyType="search"
+                />
+                <TouchableOpacity 
+                  testID="ai-search-submit"
+                  style={[styles.aiSubmitBtn, webSearchLoading && styles.aiSubmitBtnDisabled]}
+                  onPress={performWebSearch}
+                  disabled={webSearchLoading}
+                >
+                  {webSearchLoading ? (
+                    <ActivityIndicator size="small" color={colors.primaryForeground} />
+                  ) : (
+                    <MaterialCommunityIcons name="magnify" size={24} color={colors.primaryForeground} />
+                  )}
+                </TouchableOpacity>
+              </View>
+
+              <ScrollView style={styles.aiResultsScroll} contentContainerStyle={styles.aiResultsContent}>
+                {webSearchLoading && (
+                  <View style={styles.aiLoadingBox}>
+                    <ActivityIndicator size="large" color={colors.accent} />
+                    <Text style={styles.aiLoadingText}>Researching {webSearchQuery}...</Text>
+                    <Text style={styles.aiLoadingSubtext}>This may take a few seconds</Text>
+                  </View>
+                )}
+                
+                {webSearchResult && (
+                  <View style={styles.aiResultBox}>
+                    <View style={styles.aiResultHeader}>
+                      <MaterialCommunityIcons name="check-circle" size={20} color={colors.success} />
+                      <Text style={styles.aiResultTitle}>Research Results</Text>
+                    </View>
+                    <Text style={styles.aiResultText}>{webSearchResult}</Text>
+                    <View style={styles.aiDisclaimer}>
+                      <MaterialCommunityIcons name="alert-circle-outline" size={16} color={colors.warning} />
+                      <Text style={styles.aiDisclaimerText}>
+                        This is AI-generated educational content. Always consult a healthcare provider.
+                      </Text>
+                    </View>
+                  </View>
+                )}
+                
+                {!webSearchLoading && !webSearchResult && (
+                  <View style={styles.aiEmptyState}>
+                    <MaterialCommunityIcons name="flask-outline" size={48} color={colors.textTertiary} />
+                    <Text style={styles.aiEmptyText}>Enter a search term above</Text>
+                    <Text style={styles.aiEmptySubtext}>Get comprehensive AI-powered research on any {activeTab === 'peptides' ? 'peptide' : 'medication'}</Text>
+                  </View>
+                )}
+              </ScrollView>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
 
       {/* Add Custom Peptide Modal */}
       <Modal visible={showAdd === 'peptide'} animationType="slide" transparent>
@@ -424,7 +552,7 @@ export default function ResearchScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background },
   flex1: { flex: 1 },
   container: { flex: 1, padding: spacing.lg },
@@ -432,8 +560,10 @@ const styles = StyleSheet.create({
   title: { ...typography.h1, color: colors.textPrimary },
   addBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.primary, paddingHorizontal: 16, paddingVertical: 10, borderRadius: 20, gap: 6 },
   addBtnText: { ...typography.bodySm, color: colors.primaryForeground, fontWeight: '700' },
-  searchBar: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, borderRadius: 14, paddingHorizontal: spacing.md, height: 52, borderWidth: 1, borderColor: colors.border, marginBottom: spacing.md, gap: 8 },
+  searchBar: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, borderRadius: 14, paddingHorizontal: spacing.md, height: 52, borderWidth: 1, borderColor: colors.border, marginBottom: spacing.sm, gap: 8 },
   searchInput: { flex: 1, color: colors.textPrimary, fontSize: 16 },
+  aiSearchBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: colors.accent, borderRadius: 12, paddingVertical: 12, marginBottom: spacing.md, gap: 8 },
+  aiSearchBtnText: { ...typography.bodyBase, color: colors.primaryForeground, fontWeight: '700' },
   tabs: { flexDirection: 'row', marginBottom: spacing.md, gap: 8 },
   tab: { flex: 1, paddingVertical: 12, borderRadius: 12, backgroundColor: colors.surface, alignItems: 'center', borderWidth: 1, borderColor: colors.border },
   tabActive: { backgroundColor: colors.primary, borderColor: colors.primary },
@@ -482,4 +612,26 @@ const styles = StyleSheet.create({
   cancelBtnText: { ...typography.bodyBase, color: colors.textSecondary },
   saveBtn: { flex: 1, height: 52, borderRadius: 26, backgroundColor: colors.primary, justifyContent: 'center', alignItems: 'center' },
   saveBtnText: { ...typography.bodyBase, color: colors.primaryForeground, fontWeight: '700' },
+  // AI Web Search Modal styles
+  webSearchModal: { backgroundColor: colors.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, height: '85%', padding: spacing.lg },
+  aiHeaderRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  aiHint: { ...typography.bodySm, color: colors.textTertiary, marginBottom: spacing.md },
+  aiSearchInputRow: { flexDirection: 'row', gap: 8, marginBottom: spacing.md },
+  aiSearchInput: { flex: 1, height: 52, backgroundColor: colors.secondary, borderRadius: 12, borderWidth: 1, borderColor: colors.border, paddingHorizontal: spacing.md, color: colors.textPrimary, fontSize: 16 },
+  aiSubmitBtn: { width: 52, height: 52, borderRadius: 12, backgroundColor: colors.accent, justifyContent: 'center', alignItems: 'center' },
+  aiSubmitBtnDisabled: { opacity: 0.6 },
+  aiResultsScroll: { flex: 1 },
+  aiResultsContent: { paddingBottom: spacing.lg },
+  aiLoadingBox: { alignItems: 'center', paddingVertical: spacing.xxl },
+  aiLoadingText: { ...typography.bodyLg, color: colors.textPrimary, marginTop: spacing.md },
+  aiLoadingSubtext: { ...typography.bodySm, color: colors.textTertiary, marginTop: spacing.xs },
+  aiResultBox: { backgroundColor: colors.secondary, borderRadius: 16, padding: spacing.md, borderWidth: 1, borderColor: colors.border },
+  aiResultHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: spacing.md },
+  aiResultTitle: { ...typography.h3, color: colors.textPrimary },
+  aiResultText: { ...typography.bodyBase, color: colors.textSecondary, lineHeight: 24 },
+  aiDisclaimer: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, marginTop: spacing.md, paddingTop: spacing.md, borderTopWidth: 1, borderTopColor: colors.border },
+  aiDisclaimerText: { ...typography.bodySm, color: colors.warning, flex: 1, lineHeight: 18 },
+  aiEmptyState: { alignItems: 'center', paddingVertical: spacing.xxl },
+  aiEmptyText: { ...typography.bodyLg, color: colors.textSecondary, marginTop: spacing.md },
+  aiEmptySubtext: { ...typography.bodySm, color: colors.textTertiary, marginTop: spacing.xs, textAlign: 'center', paddingHorizontal: spacing.lg },
 });
