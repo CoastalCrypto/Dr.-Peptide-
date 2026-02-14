@@ -1,7 +1,8 @@
 import { useState, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, TextInput, Modal, KeyboardAvoidingView, Platform } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { colors, typography, spacing } from '../../src/theme';
+import { useTheme } from '../../src/context/ThemeContext';
+import { typography, spacing } from '../../src/theme';
 import { Storage, KEYS } from '../../src/utils/storage';
 import { useFocusEffect } from 'expo-router';
 
@@ -25,14 +26,14 @@ const MOODS = [
   { emoji: '😞', label: 'Bad', value: 'bad' },
 ];
 
-function MiniBarChart({ data, max, label }: { data: number[]; max: number; label: string }) {
+function MiniBarChart({ data, max, label, colors }: { data: number[]; max: number; label: string; colors: any }) {
   return (
-    <View style={styles.chartContainer}>
-      <Text style={styles.chartLabel}>{label}</Text>
-      <View style={styles.chartBars}>
+    <View style={{ backgroundColor: colors.surface, borderRadius: 16, padding: spacing.md, marginBottom: spacing.md, borderWidth: 1, borderColor: colors.border }}>
+      <Text style={{ ...typography.caption, color: colors.textTertiary, marginBottom: spacing.sm }}>{label}</Text>
+      <View style={{ flexDirection: 'row', alignItems: 'flex-end', height: 70, gap: 6 }}>
         {data.slice(-7).map((v, i) => (
-          <View key={i} style={styles.chartBarWrap}>
-            <View style={[styles.chartBar, { height: max > 0 ? (v / max) * 60 : 0, backgroundColor: colors.accent }]} />
+          <View key={i} style={{ flex: 1, alignItems: 'center', justifyContent: 'flex-end', height: '100%' }}>
+            <View style={{ width: '80%', borderRadius: 4, minHeight: 4, height: max > 0 ? (v / max) * 60 : 0, backgroundColor: colors.accent }} />
           </View>
         ))}
       </View>
@@ -41,6 +42,7 @@ function MiniBarChart({ data, max, label }: { data: number[]; max: number; label
 }
 
 export default function JournalScreen() {
+  const { colors } = useTheme();
   const [entries, setEntries] = useState<JournalEntry[]>([]);
   const [showLog, setShowLog] = useState(false);
   const [weight, setWeight] = useState('');
@@ -86,6 +88,8 @@ export default function JournalScreen() {
   const lastWeight = entries.find(e => e.weight)?.weight;
   const prevWeight = entries.filter(e => e.weight)[1]?.weight;
   const weightDelta = lastWeight && prevWeight ? lastWeight - prevWeight : null;
+
+  const styles = createStyles(colors);
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -151,8 +155,8 @@ export default function JournalScreen() {
         ) : (
           <>
             <Text style={styles.sectionTitle}>7-Day Trends</Text>
-            {weightData.some(v => v > 0) && <MiniBarChart data={weightData} max={Math.max(...weightData) * 1.1} label="Weight (lbs)" />}
-            {energyData.some(v => v > 0) && <MiniBarChart data={energyData} max={10} label="Energy Level" />}
+            {weightData.some(v => v > 0) && <MiniBarChart data={weightData} max={Math.max(...weightData) * 1.1} label="Weight (lbs)" colors={colors} />}
+            {energyData.some(v => v > 0) && <MiniBarChart data={energyData} max={10} label="Energy Level" colors={colors} />}
             {!weightData.some(v => v > 0) && !energyData.some(v => v > 0) && (
               <View style={styles.emptyCard}>
                 <MaterialCommunityIcons name="chart-line" size={48} color={colors.textTertiary} />
@@ -223,7 +227,7 @@ export default function JournalScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background },
   container: { flex: 1 },
   content: { padding: spacing.lg, paddingBottom: 120 },
@@ -251,11 +255,6 @@ const styles = StyleSheet.create({
   entryMetrics: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginTop: 8 },
   entryMetric: { ...typography.bodySm, color: colors.textSecondary },
   entryNotes: { ...typography.bodySm, color: colors.textTertiary, marginTop: 8, fontStyle: 'italic' },
-  chartContainer: { backgroundColor: colors.surface, borderRadius: 16, padding: spacing.md, marginBottom: spacing.md, borderWidth: 1, borderColor: colors.border },
-  chartLabel: { ...typography.caption, color: colors.textTertiary, marginBottom: spacing.sm },
-  chartBars: { flexDirection: 'row', alignItems: 'flex-end', height: 70, gap: 6 },
-  chartBarWrap: { flex: 1, alignItems: 'center', justifyContent: 'flex-end', height: '100%' },
-  chartBar: { width: '80%', borderRadius: 4, minHeight: 4 },
   modalOverlay: { flex: 1, backgroundColor: colors.overlay, justifyContent: 'flex-end' },
   modal: { backgroundColor: colors.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: '90%' },
   modalContent: { padding: spacing.lg, paddingBottom: spacing.xxl },
