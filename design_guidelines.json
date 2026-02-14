@@ -1,0 +1,198 @@
+{
+  "identity": {
+    "name": "PepTrack Pro Design System",
+    "persona": "E1: The Anti-AI Designer",
+    "vibe": "Clinical Precision meets Biohacker Aesthetics. Clean, Dark, Data-Dense but Legible.",
+    "core_principles": [
+      "Medical Grade Legibility: Dosage numbers must be massive and impossible to misread.",
+      "Dark Mode First: Built for the 95% of biohackers who live in dark mode.",
+      "Tactile Feedback: Use Haptics and Micro-interactions (Reanimated) for every log.",
+      "Data over Decoration: Charts (Victory Native) and timelines take center stage."
+    ]
+  },
+  "typography": {
+    "font_family": {
+      "headings": "System (San Francisco/Roboto) - Weight: 800/Black",
+      "body": "System (San Francisco/Roboto) - Weight: 400/Regular",
+      "dosage": "System (Monospace if available, else Sans) - Weight: 700"
+    },
+    "scale": {
+      "display": { "fontSize": 48, "lineHeight": 56, "fontWeight": "800", "letterSpacing": -1 },
+      "h1": { "fontSize": 32, "lineHeight": 40, "fontWeight": "700", "letterSpacing": -0.5 },
+      "h2": { "fontSize": 24, "lineHeight": 32, "fontWeight": "700" },
+      "h3": { "fontSize": 20, "lineHeight": 28, "fontWeight": "600" },
+      "body_lg": { "fontSize": 18, "lineHeight": 28, "fontWeight": "400" },
+      "body_base": { "fontSize": 16, "lineHeight": 24, "fontWeight": "400" },
+      "body_sm": { "fontSize": 14, "lineHeight": 20, "fontWeight": "400", "color": "#A3BFD9" },
+      "caption": { "fontSize": 12, "lineHeight": 16, "fontWeight": "500", "textTransform": "uppercase", "letterSpacing": 1 }
+    }
+  },
+  "colors": {
+    "palette": {
+      "background": "#1B3A5C",
+      "surface": "#152E48",
+      "surface_highlight": "#1E4268",
+      "primary": "#2E75B6",
+      "primary_foreground": "#FFFFFF",
+      "secondary": "#0F243A",
+      "accent": "#4CC9F0",
+      "success": "#06D6A0",
+      "warning": "#FFD166",
+      "error": "#EF476F",
+      "text_primary": "#FFFFFF",
+      "text_secondary": "#B0C4DE",
+      "text_tertiary": "#6C8CA5",
+      "border": "rgba(46, 117, 182, 0.3)",
+      "overlay": "rgba(27, 58, 92, 0.8)"
+    },
+    "usage": {
+      "background_gradient": ["#1B3A5C", "#152E48"],
+      "dosage_highlight": "#4CC9F0"
+    }
+  },
+  "spacing": {
+    "base": 4,
+    "scale": {
+      "xs": 4,
+      "sm": 8,
+      "md": 16,
+      "lg": 24,
+      "xl": 32,
+      "xxl": 48
+    },
+    "layout": {
+      "screen_padding": 20,
+      "card_padding": 16,
+      "safe_touch_target": 48
+    }
+  },
+  "components": {
+    "buttons": {
+      "primary": {
+        "height": 56,
+        "borderRadius": 28,
+        "backgroundColor": "#2E75B6",
+        "justifyContent": "center",
+        "alignItems": "center",
+        "shadowColor": "#000",
+        "shadowOffset": { "width": 0, "height": 4 },
+        "shadowOpacity": 0.3,
+        "shadowRadius": 4.65,
+        "elevation": 8
+      },
+      "secondary": {
+        "height": 56,
+        "borderRadius": 28,
+        "backgroundColor": "transparent",
+        "borderWidth": 1,
+        "borderColor": "rgba(46, 117, 182, 0.5)",
+        "justifyContent": "center",
+        "alignItems": "center"
+      },
+      "icon": {
+        "width": 48,
+        "height": 48,
+        "borderRadius": 24,
+        "backgroundColor": "rgba(255,255,255,0.1)",
+        "justifyContent": "center",
+        "alignItems": "center"
+      }
+    },
+    "cards": {
+      "base": {
+        "backgroundColor": "#152E48",
+        "borderRadius": 16,
+        "padding": 16,
+        "borderWidth": 1,
+        "borderColor": "rgba(46, 117, 182, 0.15)",
+        "marginBottom": 16
+      },
+      "glass": {
+        "backgroundColor": "rgba(21, 46, 72, 0.7)",
+        "borderRadius": 16,
+        "borderWidth": 1,
+        "borderColor": "rgba(255, 255, 255, 0.1)",
+        "blurIntensity": 20
+      }
+    },
+    "inputs": {
+      "base": {
+        "height": 56,
+        "backgroundColor": "rgba(15, 36, 58, 0.6)",
+        "borderRadius": 12,
+        "borderWidth": 1,
+        "borderColor": "rgba(46, 117, 182, 0.3)",
+        "paddingHorizontal": 16,
+        "color": "#FFFFFF",
+        "fontSize": 16
+      }
+    },
+    "navigation": {
+      "bottom_tab": {
+        "backgroundColor": "#1B3A5C",
+        "borderTopColor": "rgba(255,255,255,0.05)",
+        "height": 80,
+        "activeTintColor": "#4CC9F0",
+        "inactiveTintColor": "#6C8CA5"
+      }
+    }
+  },
+  "assets": {
+    "icons": {
+      "library": "@expo/vector-icons",
+      "sets": ["MaterialCommunityIcons", "Ionicons", "Feather"],
+      "preferred": "MaterialCommunityIcons"
+    },
+    "images": {
+      "hero_abstract": {
+        "url": "https://images.unsplash.com/photo-1740568439425-8ef0deafe965?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA2OTV8MHwxfHNlYXJjaHwzfHxhYnN0cmFjdCUyMHNjaWVuY2UlMjBtb2xlY3VsZSUyMGRuYSUyMGRhcmslMjBibHVlJTIwYmFja2dyb3VuZHxlbnwwfHx8fDE3NzEwOTM4OTZ8MA&ixlib=rb-4.1.0&q=85",
+        "desc": "Abstract blue/black structures for Auth/Hero backgrounds"
+      },
+      "research_lab": {
+        "url": "https://images.unsplash.com/photo-1582719366794-4d27cd0a34a0?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NTYxNzV8MHwxfHNlYXJjaHw0fHxtZWRpY2FsJTIwcmVzZWFyY2glMjBsYWJvcmF0b3J5JTIwY2xlYW4lMjBkYXJrJTIwYmx1ZXxlbnwwfHx8fDE3NzEwOTM4ODB8MA&ixlib=rb-4.1.0&q=85",
+        "desc": "Blue gloves/lab context for Research Tab headers"
+      },
+      "wellness_fruits": {
+        "url": "https://images.unsplash.com/photo-1581983055134-6f93a59450ac?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzMzN8MHwxfHNlYXJjaHwxfHxoZWFsdGh5JTIwbGlmZXN0eWxlJTIwYmlvaGFja2luZyUyMHdlbGxuZXNzJTIwZGFyayUyMGFlc3RoZXRpY3xlbnwwfHx8fDE3NzEwOTM4ODF8MA&ixlib=rb-4.1.0&q=85",
+        "desc": "Fresh food/wellness for Journal/Nutrition section"
+      }
+    }
+  },
+  "animations": {
+    "library": "react-native-reanimated",
+    "types": {
+      "press": "Scale down to 0.95 on press",
+      "slide": "Slide in from bottom for modals (duration: 300ms)",
+      "fade": "Fade in for new list items (duration: 200ms)",
+      "syringe_fill": "Custom height animation for the calculator syringe visualization"
+    }
+  },
+  "charts": {
+    "library": "victory-native",
+    "theme": {
+      "axis": {
+        "style": {
+          "axis": { "stroke": "rgba(255,255,255,0.1)" },
+          "tickLabels": { "fill": "#6C8CA5", "fontSize": 12 }
+        }
+      },
+      "line": { "style": { "data": { "stroke": "#4CC9F0", "strokeWidth": 3 } } },
+      "area": { "style": { "data": { "fill": "rgba(76, 201, 240, 0.2)" } } }
+    }
+  },
+  "instructions_to_main_agent": [
+    "INSTALL_DEPENDENCIES: You MUST install 'victory-native' and 'react-native-svg' immediately. They are required for charts but missing from package.json.",
+    "STYLING: Use StyleSheet.create(). DO NOT use Tailwind or className props. Use the design tokens provided in 'colors' and 'typography'.",
+    "ICONS: Use @expo/vector-icons. Prefer MaterialCommunityIcons for medical glyphs (e.g., 'pill', 'needle', 'heart-pulse').",
+    "NAVIGATION: Use expo-router. File structure should be /app/frontend/app/(tabs)/... for the tab layout.",
+    "DOSAGE: Always make dosage numbers the largest element on the screen. Use 'typography.scale.display'.",
+    "CALCULATOR: The 'Syringe' animation should be a visual bar getting filled. Use Reanimated Layout Animations for this.",
+    "DATA-TESTID: Add 'testID' prop (React Native uses testID, not data-testid) to all Pressable/TouchableOpacity/Button components."
+  ],
+  "universal_guidelines": [
+    "Avoid gradients on text.",
+    "Ensure 48px minimum touch targets.",
+    "Use SafeAreaView context properly.",
+    "Dark mode is the ONLY mode for this MVP (as per primary requirement), but code structure should allow for theming variables if needed later."
+  ]
+}
