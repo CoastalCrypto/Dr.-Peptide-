@@ -37,6 +37,10 @@ class AiSummaryRequest(BaseModel):
     journal_data: list = []
     tracked_items: list = []
 
+class AiWebSearchRequest(BaseModel):
+    query: str
+    search_type: str = "peptide"  # "peptide" or "medication"
+
 class TrackerItemCreate(BaseModel):
     type: str
     name: str
