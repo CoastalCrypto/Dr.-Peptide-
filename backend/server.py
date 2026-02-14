@@ -77,6 +77,44 @@ class CalculatorPresetCreate(BaseModel):
     bac_water_ml: float
     dose_mcg: float
 
+class RecurringItemCreate(BaseModel):
+    name: str
+    type: str = "Peptide"  # Peptide, Supplement, Medication
+    dosage_amount: float
+    dosage_unit: str
+    route: str
+    recurrence_type: str  # daily, weekly, biweekly, monthly, custom
+    recurrence_days: List[int] = []  # 0=Sun, 1=Mon, etc. for weekly/custom
+    recurrence_interval: int = 1  # Every X days/weeks/months
+    times_of_day: List[str] = []
+    start_date: str  # ISO date string
+    end_date: Optional[str] = None
+    notes: Optional[str] = None
+    category: Optional[str] = None  # For color coding
+    reminder_enabled: bool = False
+
+class RecurringItemUpdate(BaseModel):
+    name: Optional[str] = None
+    dosage_amount: Optional[float] = None
+    dosage_unit: Optional[str] = None
+    route: Optional[str] = None
+    recurrence_type: Optional[str] = None
+    recurrence_days: Optional[List[int]] = None
+    recurrence_interval: Optional[int] = None
+    times_of_day: Optional[List[str]] = None
+    end_date: Optional[str] = None
+    notes: Optional[str] = None
+    category: Optional[str] = None
+    reminder_enabled: Optional[bool] = None
+
+class DoseLogCreateV2(BaseModel):
+    recurring_item_id: str
+    scheduled_date: str  # ISO date YYYY-MM-DD
+    scheduled_time: str  # Morning, Afternoon, etc.
+    status: str  # taken, skipped, delayed
+    reason: Optional[str] = None  # For skipped/delayed
+    actual_time: Optional[str] = None  # For delayed doses
+
 # ==================== Auth Endpoints ====================
 # REMINDER: DO NOT HARDCODE THE URL, OR ADD ANY FALLBACKS OR REDIRECT URLS, THIS BREAKS THE AUTH
 
