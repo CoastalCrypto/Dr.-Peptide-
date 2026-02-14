@@ -4,6 +4,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Svg, { Circle } from 'react-native-svg';
 import { useTheme } from '../../src/context/ThemeContext';
 import { typography, spacing } from '../../src/theme';
+import type { ThemeColors } from '../../src/theme';
 import { Storage, KEYS } from '../../src/utils/storage';
 import { useFocusEffect } from 'expo-router';
 
@@ -26,22 +27,22 @@ interface DoseLog {
 
 const TIME_SLOTS = ['Morning', 'Afternoon', 'Evening', 'Bedtime'];
 
-function AdherenceRing({ taken, total }: { taken: number; total: number }) {
+function AdherenceRing({ taken, total, colors }: { taken: number; total: number; colors: ThemeColors }) {
   const pct = total > 0 ? (taken / total) * 100 : 0;
   const r = 44;
   const circ = 2 * Math.PI * r;
   const offset = circ - (pct / 100) * circ;
   return (
-    <View style={styles.ringContainer}>
+    <View style={{ alignItems: 'center', justifyContent: 'center' }}>
       <Svg width={108} height={108}>
         <Circle cx={54} cy={54} r={r} stroke={colors.surface} strokeWidth={10} fill="none" />
         <Circle cx={54} cy={54} r={r} stroke={colors.accent} strokeWidth={10} fill="none"
           strokeDasharray={`${circ}`} strokeDashoffset={offset}
           strokeLinecap="round" transform="rotate(-90, 54, 54)" />
       </Svg>
-      <View style={styles.ringText}>
-        <Text style={styles.ringPct}>{Math.round(pct)}%</Text>
-        <Text style={styles.ringLabel}>{taken}/{total}</Text>
+      <View style={{ position: 'absolute', alignItems: 'center' }}>
+        <Text style={{ ...typography.h3, color: colors.accent }}>{Math.round(pct)}%</Text>
+        <Text style={{ ...typography.caption, color: colors.textTertiary, fontSize: 10 }}>{taken}/{total}</Text>
       </View>
     </View>
   );
