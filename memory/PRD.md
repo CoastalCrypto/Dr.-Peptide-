@@ -34,11 +34,14 @@ All-in-one health companion app for researching, calculating dosages, tracking u
 - Save/load presets (AsyncStorage)
 
 ### 4. Research Database (Tab 3)
-- 15 peptide profiles: BPC-157, TB-500, Semaglutide, Tirzepatide, CJC-1295+Ipamorelin, MK-677, GHK-Cu, Epithalon, Semax, PT-141, DSIP, Thymosin Alpha-1, AOD-9604, KPV, Melanotan II
-- 12 medication profiles: Metformin, Levothyroxine, Atorvastatin, Lisinopril, Omeprazole, Sertraline, Metoprolol, Vitamin D3, Magnesium, Ashwagandha, Creatine, Omega-3
+- **29 peptide profiles** covering all categories: Healing (BPC-157, TB-500, KPV, GHK-Cu), Weight Loss (Semaglutide, Tirzepatide, AOD-9604, Tesamorelin), Muscle Growth (CJC-1295 variants, Ipamorelin, GHRP-2, GHRP-6, MK-677, Follistatin, IGF-1 LR3), Anti-Aging (Epithalon, Thymosin Alpha-1), Cognitive (Semax, Selank, Dihexa, PE-22-28), Sleep (DSIP), Immune (LL-37), Reproductive (PT-141, Kisspeptin-10), Skin & Hair (Melanotan II, PTD-DBM)
+- **20 medication profiles**: Metformin, Levothyroxine, Atorvastatin, Lisinopril, Amlodipine, Losartan, Omeprazole, Sertraline, Metoprolol, Gabapentin, Acetaminophen, Ibuprofen, Aspirin, Vitamin D3, Magnesium, Ashwagandha, Creatine, Omega-3, Zinc, Berberine
+- **Custom Entry System**: Users can add their own peptides and medications via comprehensive forms
+- Custom entries show "Custom" badge, deletable (bundled entries protected)
 - Searchable + filterable by category
 - Peptide detail page with dosage ranges, side effects, protocols, storage
 - "Quick Calculate" and "Add to Tracker" actions from detail page
+- Backend CRUD for custom entries (cloud sync ready)
 
 ### 5. Health Journal (Tab 4)
 - Log: Weight, Energy (1-10), Sleep quality/hours, Mood (5 emojis), Notes
