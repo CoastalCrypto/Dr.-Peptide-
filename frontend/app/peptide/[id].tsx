@@ -1,15 +1,24 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, typography, spacing } from '../../src/theme';
-import { peptides } from '../../src/data/peptides';
+import { peptides as bundledPeptides, Peptide } from '../../src/data/peptides';
 import { Storage, KEYS } from '../../src/utils/storage';
 
 export default function PeptideDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const peptide = peptides.find(p => p.id === id);
+  const [peptide, setPeptide] = useState<Peptide | undefined>(bundledPeptides.find(p => p.id === id));
+
+  useEffect(() => {
+    if (!peptide) {
+      Storage.get<Peptide[]>(KEYS.CUSTOM_PEPTIDES).then(custom => {
+        const found = (custom || []).find(p => p.id === id);
+        if (found) setPeptide(found);
+      });
+    }
+  }, [id]);
 
   if (!peptide) {
     return (

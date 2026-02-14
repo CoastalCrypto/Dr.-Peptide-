@@ -27,4 +27,6 @@ export const KEYS = {
   SETTINGS: 'peptrack_settings',
   USER: 'peptrack_user',
   FAVORITES: 'peptrack_favorites',
+  CUSTOM_PEPTIDES: 'peptrack_custom_peptides',
+  CUSTOM_MEDS: 'peptrack_custom_meds',
 };
