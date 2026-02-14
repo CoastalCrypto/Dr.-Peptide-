@@ -9,6 +9,7 @@ export interface Medication {
   contraindications: string[];
   interactions: string[];
   timing: string;
+  isCustom?: boolean;
 }
 
 export const medications: Medication[] = [
@@ -23,7 +24,7 @@ export const medications: Medication[] = [
     timing: 'Take with meals to reduce GI side effects. Extended-release: take with evening meal.',
   },
   {
-    id: 'levothyroxine', genericName: 'Levothyroxine', brandNames: ['Synthroid', 'Levoxyl'],
+    id: 'levothyroxine', genericName: 'Levothyroxine', brandNames: ['Synthroid', 'Levoxyl', 'Unithroid'],
     drugClass: 'Thyroid Hormone',
     uses: ['Hypothyroidism', 'Thyroid hormone replacement', 'TSH suppression'],
     standardDosage: '25-200 mcg/day. Start low (25-50 mcg), adjust every 6-8 weeks based on TSH.',
@@ -53,7 +54,27 @@ export const medications: Medication[] = [
     timing: 'Take once daily. Can be taken with or without food. Morning preferred.',
   },
   {
-    id: 'omeprazole', genericName: 'Omeprazole', brandNames: ['Prilosec', 'Nexium (similar)'],
+    id: 'amlodipine', genericName: 'Amlodipine', brandNames: ['Norvasc'],
+    drugClass: 'Calcium Channel Blocker',
+    uses: ['High blood pressure', 'Angina (chest pain)', 'Coronary artery disease'],
+    standardDosage: '2.5-10 mg/day. Start 5 mg, max 10 mg. Once daily.',
+    sideEffects: ['Ankle swelling', 'Dizziness', 'Flushing', 'Fatigue', 'Palpitations'],
+    contraindications: ['Severe aortic stenosis', 'Cardiogenic shock', 'Severe hypotension'],
+    interactions: ['Simvastatin (limit to 20mg)', 'CYP3A4 inhibitors', 'Cyclosporine'],
+    timing: 'Take once daily at the same time. Can be taken with or without food.',
+  },
+  {
+    id: 'losartan', genericName: 'Losartan', brandNames: ['Cozaar'],
+    drugClass: 'Angiotensin II Receptor Blocker (ARB)',
+    uses: ['High blood pressure', 'Diabetic nephropathy', 'Stroke prevention in LVH'],
+    standardDosage: '25-100 mg/day. Start 50 mg once daily, may increase to 100 mg.',
+    sideEffects: ['Dizziness', 'Elevated potassium', 'Fatigue', 'Nasal congestion'],
+    contraindications: ['Pregnancy', 'Severe liver impairment', 'Concurrent aliskiren in diabetes'],
+    interactions: ['Potassium supplements', 'NSAIDs', 'Lithium', 'ACE inhibitors'],
+    timing: 'Take once daily. Can be taken with or without food.',
+  },
+  {
+    id: 'omeprazole', genericName: 'Omeprazole', brandNames: ['Prilosec'],
     drugClass: 'Proton Pump Inhibitor (PPI)',
     uses: ['GERD/acid reflux', 'Stomach ulcers', 'H. pylori treatment', 'NSAID gastroprotection'],
     standardDosage: '20-40 mg/day. 20 mg for maintenance, 40 mg for active ulcers/severe GERD.',
@@ -81,6 +102,46 @@ export const medications: Medication[] = [
     contraindications: ['Severe bradycardia', 'Heart block (2nd/3rd degree)', 'Cardiogenic shock', 'Decompensated heart failure'],
     interactions: ['Calcium channel blockers', 'Clonidine', 'Digoxin', 'CYP2D6 inhibitors'],
     timing: 'IR: Take with meals. ER: Take with or without food. Do NOT stop abruptly - taper gradually.',
+  },
+  {
+    id: 'gabapentin', genericName: 'Gabapentin', brandNames: ['Neurontin', 'Gralise'],
+    drugClass: 'Anticonvulsant / Nerve Pain Agent',
+    uses: ['Neuropathic pain', 'Postherpetic neuralgia', 'Seizures (adjunct)', 'Restless leg syndrome'],
+    standardDosage: '300-3600 mg/day in 3 divided doses. Start 300 mg at bedtime, increase gradually.',
+    sideEffects: ['Drowsiness', 'Dizziness', 'Weight gain', 'Peripheral edema', 'Ataxia'],
+    contraindications: ['Severe renal impairment (adjust dose)', 'Myasthenia gravis'],
+    interactions: ['Antacids (reduce absorption)', 'Opioids (respiratory depression risk)', 'CNS depressants'],
+    timing: 'Take 3x daily for pain. Bedtime dose helps with sleep. Separate from antacids by 2h.',
+  },
+  {
+    id: 'acetaminophen', genericName: 'Acetaminophen', brandNames: ['Tylenol', 'Paracetamol'],
+    drugClass: 'Analgesic / Antipyretic (OTC)',
+    uses: ['Pain relief', 'Fever reduction', 'Headaches', 'Osteoarthritis'],
+    standardDosage: '325-1000 mg every 4-6 hours. Max 3000-4000 mg/day. Reduce with liver disease.',
+    sideEffects: ['Liver damage (overdose)', 'Nausea', 'Rash (rare)'],
+    contraindications: ['Severe liver disease', 'Alcohol dependence (increased toxicity risk)'],
+    interactions: ['Warfarin (may increase INR)', 'Alcohol (liver toxicity)', 'Isoniazid'],
+    timing: 'Can be taken with or without food. Space doses at least 4 hours apart.',
+  },
+  {
+    id: 'ibuprofen', genericName: 'Ibuprofen', brandNames: ['Advil', 'Motrin'],
+    drugClass: 'NSAID (OTC)',
+    uses: ['Pain relief', 'Inflammation', 'Fever', 'Menstrual cramps', 'Arthritis'],
+    standardDosage: '200-800 mg every 4-6 hours. Max 3200 mg/day (prescription). OTC max 1200 mg/day.',
+    sideEffects: ['GI upset/ulcers', 'Kidney effects', 'Increased bleeding risk', 'Hypertension', 'Edema'],
+    contraindications: ['Active GI bleeding', 'Severe kidney disease', 'Third trimester pregnancy', 'CABG surgery'],
+    interactions: ['Aspirin (may reduce cardioprotection)', 'Blood thinners', 'ACE inhibitors/ARBs', 'Lithium', 'Methotrexate'],
+    timing: 'Take with food or milk to reduce GI side effects. Avoid long-term use without monitoring.',
+  },
+  {
+    id: 'aspirin', genericName: 'Aspirin', brandNames: ['Bayer', 'Ecotrin'],
+    drugClass: 'NSAID / Antiplatelet (OTC)',
+    uses: ['Pain relief', 'Fever', 'Heart attack/stroke prevention', 'Anti-inflammatory'],
+    standardDosage: 'Pain: 325-650 mg every 4-6h. Cardiac: 81 mg daily (low-dose).',
+    sideEffects: ['GI bleeding', 'Stomach upset', 'Bruising', 'Tinnitus (high doses)', 'Reye syndrome (children)'],
+    contraindications: ['Active bleeding', 'Hemophilia', 'Children with viral illness', 'Last trimester pregnancy'],
+    interactions: ['Blood thinners (warfarin)', 'Ibuprofen (timing matters)', 'Methotrexate', 'SSRIs (bleeding risk)'],
+    timing: 'Cardiac dose: take with food, same time daily. Pain: take with food every 4-6h as needed.',
   },
   {
     id: 'vitamin-d3', genericName: 'Vitamin D3', brandNames: ['Cholecalciferol'],
@@ -131,5 +192,25 @@ export const medications: Medication[] = [
     contraindications: ['Fish/shellfish allergy (some sources)', 'Active bleeding disorders'],
     interactions: ['Blood thinners (warfarin, aspirin)', 'Blood pressure medications'],
     timing: 'Take with a fat-containing meal to reduce fishy burps and improve absorption.',
+  },
+  {
+    id: 'zinc', genericName: 'Zinc', brandNames: ['Zinc Picolinate', 'Zinc Gluconate', 'Optizinc'],
+    drugClass: 'Mineral Supplement',
+    uses: ['Immune support', 'Testosterone support', 'Wound healing', 'Acne', 'Taste/smell disorders'],
+    standardDosage: '15-30 mg elemental zinc/day. Max 40 mg/day for adults (UL). Short-term: up to 50 mg.',
+    sideEffects: ['Nausea (on empty stomach)', 'Copper depletion (long-term)', 'Metallic taste', 'Headache'],
+    contraindications: ['Copper deficiency (supplement copper if >25 mg/day long-term)'],
+    interactions: ['Antibiotics (tetracyclines, quinolones)', 'Iron (compete for absorption)', 'Penicillamine'],
+    timing: 'Take with food to prevent nausea. Separate from iron and antibiotics by 2 hours.',
+  },
+  {
+    id: 'berberine', genericName: 'Berberine', brandNames: ['Thorne Berberine', 'Various'],
+    drugClass: 'Natural Supplement (Metabolic)',
+    uses: ['Blood sugar management', 'Cholesterol support', 'Gut health', 'AMPK activation', 'Weight management'],
+    standardDosage: '500 mg 2-3x/day with meals. Total 1000-1500 mg/day.',
+    sideEffects: ['GI upset', 'Diarrhea', 'Constipation', 'Cramping', 'Low blood sugar (with diabetes meds)'],
+    contraindications: ['Pregnancy/nursing', 'Low blood pressure', 'Children'],
+    interactions: ['Metformin (additive blood sugar lowering)', 'Cyclosporine', 'CYP3A4/CYP2D6 substrates', 'Blood thinners'],
+    timing: 'Take with meals, 2-3x daily. Space evenly throughout the day for steady blood levels.',
   },
 ];
