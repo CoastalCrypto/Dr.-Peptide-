@@ -1,5 +1,6 @@
-// Grungy Gym Vibe — Dark, edgy, neon accents
-export const colors = {
+// PepTrack Pro Theme System — Supports Light & Dark modes
+
+export const darkColors = {
   background: '#0D0D0D',
   surface: '#1A1A1A',
   surfaceHighlight: '#2A2A2A',
@@ -17,6 +18,31 @@ export const colors = {
   overlay: 'rgba(0, 0, 0, 0.85)',
   dosageHighlight: '#39FF14',
 };
+
+export const lightColors = {
+  background: '#F5F5F7',
+  surface: '#FFFFFF',
+  surfaceHighlight: '#E8E8ED',
+  primary: '#FF3B30',
+  primaryForeground: '#FFFFFF',
+  secondary: '#F0F0F5',
+  accent: '#00A86B',
+  success: '#30D158',
+  warning: '#FF9500',
+  error: '#FF453A',
+  textPrimary: '#1C1C1E',
+  textSecondary: '#636366',
+  textTertiary: '#8E8E93',
+  border: 'rgba(0, 0, 0, 0.1)',
+  overlay: 'rgba(0, 0, 0, 0.5)',
+  dosageHighlight: '#00A86B',
+};
+
+// Default export for backward compatibility
+export const colors = darkColors;
+
+export type ThemeColors = typeof darkColors;
+export type ThemeMode = 'light' | 'dark' | 'system';
 
 export const FONT_MARKER = 'PermanentMarker_400Regular';
 
