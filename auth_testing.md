@@ -26,7 +26,7 @@ print('User ID: ' + userId);
 
 ## Step 2: Test Backend API
 ```bash
-curl -X GET "https://peptide-tracker-16.preview.emergentagent.com/api/auth/me" \
+curl -X GET "https://dosage-journal.preview.emergentagent.com/api/auth/me" \
   -H "Authorization: Bearer YOUR_SESSION_TOKEN"
 ```
 
@@ -41,7 +41,7 @@ await page.context.add_cookies([{
     "secure": true,
     "sameSite": "None"
 }]);
-await page.goto("https://peptide-tracker-16.preview.emergentagent.com");
+await page.goto("https://dosage-journal.preview.emergentagent.com");
 ```
 
 ## Checklist
