@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, Switch, Alert } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { colors, typography, spacing, DISCLAIMER } from '../../src/theme';
+import { useTheme } from '../../src/context/ThemeContext';
+import { typography, spacing, DISCLAIMER } from '../../src/theme';
 import { Storage, KEYS } from '../../src/utils/storage';
 import { api } from '../../src/utils/api';
 import { Platform } from 'react-native';
@@ -9,13 +10,13 @@ import { Platform } from 'react-native';
 interface Settings {
   weightUnit: string;
   measureUnit: string;
-  darkMode: boolean;
   notifications: boolean;
 }
 
 export default function ProfileScreen() {
+  const { colors, mode, setMode, isDark } = useTheme();
   const [user, setUser] = useState<any>(null);
-  const [settings, setSettings] = useState<Settings>({ weightUnit: 'lbs', measureUnit: 'inches', darkMode: true, notifications: true });
+  const [settings, setSettings] = useState<Settings>({ weightUnit: 'lbs', measureUnit: 'inches', notifications: true });
 
   useEffect(() => {
     Storage.get<any>(KEYS.USER).then(u => setUser(u));
@@ -67,6 +68,8 @@ export default function ProfileScreen() {
     ]);
   };
 
+  const styles = createStyles(colors);
+
   return (
     <SafeAreaView style={styles.safe}>
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
@@ -92,6 +95,46 @@ export default function ProfileScreen() {
             <Text style={styles.logoutBtnText}>Sign Out</Text>
           </TouchableOpacity>
         )}
+
+        <Text style={styles.sectionTitle}>Appearance</Text>
+        <View style={styles.settingsCard}>
+          <View style={styles.settingRow}>
+            <View style={styles.settingInfo}>
+              <MaterialCommunityIcons 
+                name={isDark ? 'moon-waning-crescent' : 'white-balance-sunny'} 
+                size={22} 
+                color={colors.accent} 
+              />
+              <Text style={styles.settingLabel}>Theme</Text>
+            </View>
+            <View style={styles.themeToggle}>
+              <TouchableOpacity 
+                testID="theme-light"
+                style={[styles.themeBtn, mode === 'light' && styles.themeBtnActive]} 
+                onPress={() => setMode('light')}
+              >
+                <MaterialCommunityIcons name="white-balance-sunny" size={18} color={mode === 'light' ? colors.primaryForeground : colors.textTertiary} />
+              </TouchableOpacity>
+              <TouchableOpacity 
+                testID="theme-system"
+                style={[styles.themeBtn, mode === 'system' && styles.themeBtnActive]} 
+                onPress={() => setMode('system')}
+              >
+                <MaterialCommunityIcons name="cellphone" size={18} color={mode === 'system' ? colors.primaryForeground : colors.textTertiary} />
+              </TouchableOpacity>
+              <TouchableOpacity 
+                testID="theme-dark"
+                style={[styles.themeBtn, mode === 'dark' && styles.themeBtnActive]} 
+                onPress={() => setMode('dark')}
+              >
+                <MaterialCommunityIcons name="moon-waning-crescent" size={18} color={mode === 'dark' ? colors.primaryForeground : colors.textTertiary} />
+              </TouchableOpacity>
+            </View>
+          </View>
+          <Text style={styles.themeHint}>
+            {mode === 'system' ? 'Following system preference' : mode === 'dark' ? 'Dark mode enabled' : 'Light mode enabled'}
+          </Text>
+        </View>
 
         <Text style={styles.sectionTitle}>Preferences</Text>
         <View style={styles.settingsCard}>
@@ -155,7 +198,7 @@ export default function ProfileScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background },
   container: { flex: 1 },
   content: { padding: spacing.lg, paddingBottom: 120 },
@@ -172,6 +215,7 @@ const styles = StyleSheet.create({
   sectionTitle: { ...typography.caption, color: colors.textTertiary, marginBottom: spacing.sm, marginTop: spacing.md },
   settingsCard: { backgroundColor: colors.surface, borderRadius: 16, borderWidth: 1, borderColor: colors.border, marginBottom: spacing.md },
   settingRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: spacing.md, minHeight: 52 },
+  settingInfo: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   settingLabel: { ...typography.bodyBase, color: colors.textPrimary },
   settingValue: { ...typography.bodyBase, color: colors.textTertiary },
   divider: { height: 1, backgroundColor: colors.border, marginHorizontal: spacing.md },
@@ -180,6 +224,10 @@ const styles = StyleSheet.create({
   unitBtnActive: { backgroundColor: colors.primary, borderColor: colors.primary },
   unitBtnText: { ...typography.bodySm, color: colors.textSecondary },
   unitBtnTextActive: { color: colors.primaryForeground, fontWeight: '700' },
-  disclaimerCard: { flexDirection: 'row', backgroundColor: 'rgba(255,209,102,0.1)', borderRadius: 12, padding: spacing.md, marginTop: spacing.lg, gap: 10 },
+  themeToggle: { flexDirection: 'row', backgroundColor: colors.secondary, borderRadius: 12, padding: 4 },
+  themeBtn: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 8 },
+  themeBtnActive: { backgroundColor: colors.primary },
+  themeHint: { ...typography.bodySm, color: colors.textTertiary, paddingHorizontal: spacing.md, paddingBottom: spacing.md, marginTop: -8 },
+  disclaimerCard: { flexDirection: 'row', backgroundColor: colors.isDark ? 'rgba(255,209,102,0.1)' : 'rgba(255,149,0,0.1)', borderRadius: 12, padding: spacing.md, marginTop: spacing.lg, gap: 10 },
   disclaimerText: { ...typography.bodySm, color: colors.textTertiary, flex: 1, fontSize: 11, lineHeight: 16 },
 });
