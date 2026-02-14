@@ -10,11 +10,16 @@ export default function Entry() {
 
   useEffect(() => {
     const check = async () => {
-      const onboarded = await Storage.get<boolean>(KEYS.ONBOARDED);
-      if (onboarded) {
-        router.replace('/(tabs)');
+      const waiverAccepted = await Storage.get<boolean>(KEYS.WAIVER_ACCEPTED);
+      if (!waiverAccepted) {
+        router.replace('/waiver');
       } else {
-        router.replace('/onboarding');
+        const onboarded = await Storage.get<boolean>(KEYS.ONBOARDED);
+        if (onboarded) {
+          router.replace('/(tabs)');
+        } else {
+          router.replace('/onboarding');
+        }
       }
       setChecking(false);
     };

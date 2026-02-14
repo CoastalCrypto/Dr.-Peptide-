@@ -1,6 +1,10 @@
 import { Tabs } from 'expo-router';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { colors } from '../../src/theme';
+import { Text, StyleSheet } from 'react-native';
+import { colors, FONT_MARKER } from '../../src/theme';
+
+function TabIcon({ emoji, focused }: { emoji: string; focused: boolean }) {
+  return <Text style={[styles.emoji, focused && styles.emojiFocused]}>{emoji}</Text>;
+}
 
 export default function TabLayout() {
   return (
@@ -10,22 +14,20 @@ export default function TabLayout() {
         tabBarStyle: {
           backgroundColor: colors.secondary,
           borderTopColor: 'rgba(255,255,255,0.05)',
-          height: 80,
-          paddingBottom: 16,
+          height: 82,
+          paddingBottom: 18,
           paddingTop: 8,
         },
         tabBarActiveTintColor: colors.accent,
         tabBarInactiveTintColor: colors.textTertiary,
-        tabBarLabelStyle: { fontSize: 11, fontWeight: '600' },
+        tabBarLabelStyle: { fontSize: 11, fontWeight: '700', letterSpacing: 0.5 },
       }}
     >
       <Tabs.Screen
         name="index"
         options={{
           title: 'Home',
-          tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons name="view-dashboard" size={size} color={color} />
-          ),
+          tabBarIcon: ({ focused }) => <TabIcon emoji="🏠" focused={focused} />,
           tabBarTestID: 'tab-home',
         }}
       />
@@ -33,9 +35,7 @@ export default function TabLayout() {
         name="calculator"
         options={{
           title: 'Calculator',
-          tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons name="needle" size={size} color={color} />
-          ),
+          tabBarIcon: ({ focused }) => <TabIcon emoji="💉" focused={focused} />,
           tabBarTestID: 'tab-calculator',
         }}
       />
@@ -43,9 +43,7 @@ export default function TabLayout() {
         name="research"
         options={{
           title: 'Research',
-          tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons name="book-search" size={size} color={color} />
-          ),
+          tabBarIcon: ({ focused }) => <TabIcon emoji="🔬" focused={focused} />,
           tabBarTestID: 'tab-research',
         }}
       />
@@ -53,9 +51,7 @@ export default function TabLayout() {
         name="journal"
         options={{
           title: 'Journal',
-          tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons name="heart-pulse" size={size} color={color} />
-          ),
+          tabBarIcon: ({ focused }) => <TabIcon emoji="📊" focused={focused} />,
           tabBarTestID: 'tab-journal',
         }}
       />
@@ -63,12 +59,15 @@ export default function TabLayout() {
         name="profile"
         options={{
           title: 'Profile',
-          tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons name="account-circle" size={size} color={color} />
-          ),
+          tabBarIcon: ({ focused }) => <TabIcon emoji="👤" focused={focused} />,
           tabBarTestID: 'tab-profile',
         }}
       />
     </Tabs>
   );
 }
+
+const styles = StyleSheet.create({
+  emoji: { fontSize: 24 },
+  emojiFocused: { fontSize: 28, transform: [{ scale: 1.15 }] },
+});
