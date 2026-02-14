@@ -27,7 +27,7 @@ export default function TabLayout() {
         name="index"
         options={{
           title: 'Home',
-          tabBarIcon: ({ focused }) => <TabIcon emoji="🏠" focused={focused} />,
+          tabBarIcon: ({ focused }) => <TabIcon emoji="🏋️" focused={focused} />,
           tabBarTestID: 'tab-home',
         }}
       />
@@ -35,7 +35,7 @@ export default function TabLayout() {
         name="calculator"
         options={{
           title: 'Calculator',
-          tabBarIcon: ({ focused }) => <TabIcon emoji="💉" focused={focused} />,
+          tabBarIcon: ({ focused }) => <TabIcon emoji="🧮" focused={focused} />,
           tabBarTestID: 'tab-calculator',
         }}
       />
@@ -51,7 +51,7 @@ export default function TabLayout() {
         name="journal"
         options={{
           title: 'Journal',
-          tabBarIcon: ({ focused }) => <TabIcon emoji="📊" focused={focused} />,
+          tabBarIcon: ({ focused }) => <TabIcon emoji="📓" focused={focused} />,
           tabBarTestID: 'tab-journal',
         }}
       />
@@ -59,7 +59,7 @@ export default function TabLayout() {
         name="profile"
         options={{
           title: 'Profile',
-          tabBarIcon: ({ focused }) => <TabIcon emoji="👤" focused={focused} />,
+          tabBarIcon: ({ focused }) => <TabIcon emoji="⚙️" focused={focused} />,
           tabBarTestID: 'tab-profile',
         }}
       />
