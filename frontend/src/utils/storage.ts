@@ -31,4 +31,5 @@ export const KEYS = {
   CUSTOM_PEPTIDES: 'peptrack_custom_peptides',
   CUSTOM_MEDS: 'peptrack_custom_meds',
   THEME_MODE: 'peptrack_theme_mode',
+  RECURRING_ITEMS: 'peptrack_recurring_items',
 };
