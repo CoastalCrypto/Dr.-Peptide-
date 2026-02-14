@@ -189,6 +189,65 @@ async def ai_summary(req: AiSummaryRequest):
         logger.error(f"AI summary error: {e}")
         raise HTTPException(status_code=500, detail="AI service error")
 
+@api_router.post("/ai/web-search")
+async def ai_web_search(req: AiWebSearchRequest):
+    """AI-powered web search for peptide/medication research with summarized results."""
+    llm_key = os.environ.get('EMERGENT_LLM_KEY')
+    if not llm_key:
+        raise HTTPException(status_code=503, detail="AI not configured")
+    try:
+        from emergentintegrations.llm.chat import LlmChat, UserMessage
+        
+        # Create a research-focused prompt
+        if req.search_type == "peptide":
+            system_msg = """You are PepTrack Pro's peptide research AI assistant. Your role is to provide comprehensive, evidence-based information about peptides.
+
+When researching a peptide, provide:
+1. **Overview**: What it is and its primary purpose
+2. **Mechanism of Action**: How it works in the body
+3. **Common Uses**: What it's typically used for
+4. **Dosage Guidelines**: Typical dosing ranges (always note this is educational only)
+5. **Administration**: How it's typically administered
+6. **Side Effects**: Common and potential side effects
+7. **Research Status**: Current state of clinical research
+8. **Important Warnings**: Any critical safety information
+
+IMPORTANT: Always remind users this is educational information only and they should consult a healthcare provider before using any peptide. Format your response with clear headers and bullet points for easy reading."""
+        else:
+            system_msg = """You are PepTrack Pro's medication research AI assistant. Your role is to provide comprehensive, evidence-based information about medications.
+
+When researching a medication, provide:
+1. **Overview**: What it is and its drug class
+2. **Uses**: FDA-approved and common off-label uses
+3. **How It Works**: Mechanism of action
+4. **Dosage**: Typical dosing guidelines
+5. **Side Effects**: Common and serious side effects
+6. **Interactions**: Major drug interactions to be aware of
+7. **Warnings**: Important precautions and contraindications
+
+IMPORTANT: Always remind users this is educational information only and they should consult a healthcare provider or pharmacist for medical advice. Format your response with clear headers and bullet points for easy reading."""
+
+        chat = LlmChat(
+            api_key=llm_key,
+            session_id=f"websearch-{uuid.uuid4().hex[:8]}",
+            system_message=system_msg
+        )
+        chat.with_model("openai", "gpt-5.2")
+        
+        prompt = f"Please provide comprehensive research information about: {req.query}"
+        
+        resp = await chat.send_message(UserMessage(text=prompt))
+        
+        return {
+            "query": req.query,
+            "search_type": req.search_type,
+            "result": resp,
+            "disclaimer": "This information is for educational purposes only. Always consult a qualified healthcare provider before using any peptides or medications."
+        }
+    except Exception as e:
+        logger.error(f"AI web search error: {e}")
+        raise HTTPException(status_code=500, detail="AI service error")
+
 # ==================== Tracker CRUD ====================
 
 @api_router.post("/tracker/items")
