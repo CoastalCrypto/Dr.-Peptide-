@@ -4,8 +4,35 @@ import { useFonts, PermanentMarker_400Regular } from '@expo-google-fonts/permane
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
+import { ThemeProvider, useTheme } from '../src/context/ThemeContext';
 
 SplashScreen.preventAutoHideAsync();
+
+function RootLayoutContent() {
+  const { colors, isDark } = useTheme();
+
+  return (
+    <>
+      <StatusBar style={isDark ? 'light' : 'dark'} />
+      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.background } }}>
+        <Stack.Screen name="index" />
+        <Stack.Screen name="waiver" />
+        <Stack.Screen name="onboarding" />
+        <Stack.Screen name="(tabs)" />
+        <Stack.Screen
+          name="peptide/[id]"
+          options={{
+            headerShown: true,
+            headerStyle: { backgroundColor: colors.surface },
+            headerTintColor: colors.textPrimary,
+            headerTitle: 'Peptide Details',
+            presentation: 'card',
+          }}
+        />
+      </Stack>
+    </>
+  );
+}
 
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({ PermanentMarker_400Regular });
@@ -25,25 +52,9 @@ export default function RootLayout() {
   }
 
   return (
-    <>
-      <StatusBar style="light" />
-      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#0D0D0D' } }}>
-        <Stack.Screen name="index" />
-        <Stack.Screen name="waiver" />
-        <Stack.Screen name="onboarding" />
-        <Stack.Screen name="(tabs)" />
-        <Stack.Screen
-          name="peptide/[id]"
-          options={{
-            headerShown: true,
-            headerStyle: { backgroundColor: '#1A1A1A' },
-            headerTintColor: '#FFFFFF',
-            headerTitle: 'Peptide Details',
-            presentation: 'card',
-          }}
-        />
-      </Stack>
-    </>
+    <ThemeProvider>
+      <RootLayoutContent />
+    </ThemeProvider>
   );
 }
 
