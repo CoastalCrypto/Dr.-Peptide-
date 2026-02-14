@@ -1,8 +1,9 @@
-import { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, Modal, TextInput, Alert } from 'react-native';
+import { useState, useCallback } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, Modal, TextInput } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Svg, { Circle } from 'react-native-svg';
-import { colors, typography, spacing } from '../../src/theme';
+import { useTheme } from '../../src/context/ThemeContext';
+import { typography, spacing } from '../../src/theme';
 import { Storage, KEYS } from '../../src/utils/storage';
 import { useFocusEffect } from 'expo-router';
 
@@ -25,28 +26,29 @@ interface DoseLog {
 
 const TIME_SLOTS = ['Morning', 'Afternoon', 'Evening', 'Bedtime'];
 
-function AdherenceRing({ taken, total }: { taken: number; total: number }) {
+function AdherenceRing({ taken, total, colors }: { taken: number; total: number; colors: any }) {
   const pct = total > 0 ? (taken / total) * 100 : 0;
   const r = 44;
   const circ = 2 * Math.PI * r;
   const offset = circ - (pct / 100) * circ;
   return (
-    <View style={styles.ringContainer}>
+    <View style={{ alignItems: 'center', justifyContent: 'center' }}>
       <Svg width={108} height={108}>
         <Circle cx={54} cy={54} r={r} stroke={colors.surface} strokeWidth={10} fill="none" />
         <Circle cx={54} cy={54} r={r} stroke={colors.accent} strokeWidth={10} fill="none"
           strokeDasharray={`${circ}`} strokeDashoffset={offset}
           strokeLinecap="round" transform="rotate(-90, 54, 54)" />
       </Svg>
-      <View style={styles.ringText}>
-        <Text style={styles.ringPct}>{Math.round(pct)}%</Text>
-        <Text style={styles.ringLabel}>{taken}/{total}</Text>
+      <View style={{ position: 'absolute', alignItems: 'center' }}>
+        <Text style={{ ...typography.h3, color: colors.accent }}>{Math.round(pct)}%</Text>
+        <Text style={{ ...typography.caption, color: colors.textTertiary, fontSize: 10 }}>{taken}/{total}</Text>
       </View>
     </View>
   );
 }
 
 export default function HomeScreen() {
+  const { colors } = useTheme();
   const [items, setItems] = useState<TrackerItem[]>([]);
   const [logs, setLogs] = useState<DoseLog[]>([]);
   const [showAdd, setShowAdd] = useState(false);
@@ -109,6 +111,8 @@ export default function HomeScreen() {
 
   const takenCount = todayDoses.filter(d => getDoseStatus(d.id, d.time) === 'taken').length;
 
+  const styles = createStyles(colors);
+
   return (
     <SafeAreaView style={styles.safe}>
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
@@ -117,7 +121,7 @@ export default function HomeScreen() {
             <Text style={styles.greeting} testID="home-greeting">{greeting}</Text>
             <Text style={styles.date}>{new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</Text>
           </View>
-          <AdherenceRing taken={takenCount} total={todayDoses.length} />
+          <AdherenceRing taken={takenCount} total={todayDoses.length} colors={colors} />
         </View>
 
         <Text style={styles.sectionTitle}>Today's Schedule</Text>
@@ -152,7 +156,7 @@ export default function HomeScreen() {
                     </>
                   ) : (
                     <View style={[styles.statusBadge, status === 'taken' ? styles.takenBadge : styles.skippedBadge]}>
-                      <Text style={styles.statusText}>{status === 'taken' ? 'Taken' : 'Skipped'}</Text>
+                      <Text style={[styles.statusText, { color: status === 'taken' ? colors.success : colors.warning }]}>{status === 'taken' ? 'Taken' : 'Skipped'}</Text>
                     </View>
                   )}
                 </View>
@@ -220,17 +224,13 @@ export default function HomeScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background },
   container: { flex: 1 },
   content: { padding: spacing.lg, paddingBottom: 100 },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.lg },
   greeting: { ...typography.h1, color: colors.textPrimary },
   date: { ...typography.bodySm, color: colors.textSecondary, marginTop: 4 },
-  ringContainer: { alignItems: 'center', justifyContent: 'center' },
-  ringText: { position: 'absolute', alignItems: 'center' },
-  ringPct: { ...typography.h3, color: colors.accent },
-  ringLabel: { ...typography.caption, color: colors.textTertiary, fontSize: 10 },
   sectionTitle: { ...typography.h3, color: colors.textPrimary, marginBottom: spacing.md },
   emptyCard: { backgroundColor: colors.surface, borderRadius: 16, padding: spacing.xl, alignItems: 'center', borderWidth: 1, borderColor: colors.border, borderStyle: 'dashed' },
   emptyText: { ...typography.bodyLg, color: colors.textSecondary, marginTop: spacing.md },
