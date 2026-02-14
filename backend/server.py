@@ -357,6 +357,134 @@ async def delete_preset(preset_id: str):
         raise HTTPException(status_code=404, detail="Preset not found")
     return {"message": "Deleted"}
 
+# ==================== Recurring Items CRUD ====================
+
+@api_router.post("/recurring-items")
+async def create_recurring_item(item: RecurringItemCreate):
+    doc = item.dict()
+    doc["item_id"] = f"rec_{uuid.uuid4().hex[:12]}"
+    doc["created_at"] = datetime.now(timezone.utc).isoformat()
+    doc["is_active"] = True
+    await db.recurring_items.insert_one(doc)
+    return await db.recurring_items.find_one({"item_id": doc["item_id"]}, {"_id": 0})
+
+@api_router.get("/recurring-items")
+async def get_recurring_items(active_only: bool = True):
+    query = {"is_active": True} if active_only else {}
+    return await db.recurring_items.find(query, {"_id": 0}).to_list(500)
+
+@api_router.get("/recurring-items/{item_id}")
+async def get_recurring_item(item_id: str):
+    item = await db.recurring_items.find_one({"item_id": item_id}, {"_id": 0})
+    if not item:
+        raise HTTPException(status_code=404, detail="Recurring item not found")
+    return item
+
+@api_router.put("/recurring-items/{item_id}")
+async def update_recurring_item(item_id: str, update: RecurringItemUpdate):
+    update_data = {k: v for k, v in update.dict().items() if v is not None}
+    if not update_data:
+        raise HTTPException(status_code=400, detail="No fields to update")
+    update_data["updated_at"] = datetime.now(timezone.utc).isoformat()
+    result = await db.recurring_items.update_one(
+        {"item_id": item_id},
+        {"$set": update_data}
+    )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Recurring item not found")
+    return await db.recurring_items.find_one({"item_id": item_id}, {"_id": 0})
+
+@api_router.delete("/recurring-items/{item_id}")
+async def delete_recurring_item(item_id: str):
+    # Soft delete - mark as inactive
+    result = await db.recurring_items.update_one(
+        {"item_id": item_id},
+        {"$set": {"is_active": False, "deleted_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Recurring item not found")
+    return {"message": "Deleted"}
+
+# Helper to get scheduled items for a specific date
+def get_scheduled_for_date(item: dict, target_date: str) -> bool:
+    """Check if a recurring item is scheduled for a specific date."""
+    from datetime import datetime as dt
+    target = dt.fromisoformat(target_date)
+    start = dt.fromisoformat(item["start_date"])
+    
+    if target < start:
+        return False
+    
+    if item.get("end_date"):
+        end = dt.fromisoformat(item["end_date"])
+        if target > end:
+            return False
+    
+    rec_type = item["recurrence_type"]
+    interval = item.get("recurrence_interval", 1)
+    days_diff = (target - start).days
+    
+    if rec_type == "daily":
+        return days_diff % interval == 0
+    elif rec_type == "weekly":
+        rec_days = item.get("recurrence_days", [])
+        target_day = target.weekday()  # 0=Mon, 6=Sun
+        # Convert our format (0=Sun) to Python's (0=Mon)
+        converted_day = (target_day + 1) % 7
+        if converted_day not in rec_days:
+            return False
+        weeks_diff = days_diff // 7
+        return weeks_diff % interval == 0
+    elif rec_type == "biweekly":
+        weeks_diff = days_diff // 7
+        target_day = target.weekday()
+        converted_day = (target_day + 1) % 7
+        rec_days = item.get("recurrence_days", [])
+        return weeks_diff % 2 == 0 and converted_day in rec_days
+    elif rec_type == "monthly":
+        months_diff = (target.year - start.year) * 12 + (target.month - start.month)
+        return months_diff % interval == 0 and target.day == start.day
+    elif rec_type == "custom":
+        return days_diff % interval == 0
+    
+    return False
+
+@api_router.get("/recurring-items/schedule/{date}")
+async def get_schedule_for_date(date: str):
+    """Get all recurring items scheduled for a specific date."""
+    items = await db.recurring_items.find({"is_active": True}, {"_id": 0}).to_list(500)
+    scheduled = []
+    for item in items:
+        if get_scheduled_for_date(item, date):
+            scheduled.append(item)
+    return scheduled
+
+@api_router.post("/recurring-items/dose-log")
+async def log_recurring_dose(log: DoseLogCreateV2):
+    doc = log.dict()
+    doc["log_id"] = f"rlog_{uuid.uuid4().hex[:12]}"
+    doc["logged_at"] = datetime.now(timezone.utc).isoformat()
+    # Upsert: replace existing log for same item/date/time
+    await db.recurring_dose_logs.update_one(
+        {
+            "recurring_item_id": doc["recurring_item_id"],
+            "scheduled_date": doc["scheduled_date"],
+            "scheduled_time": doc["scheduled_time"]
+        },
+        {"$set": doc},
+        upsert=True
+    )
+    return await db.recurring_dose_logs.find_one(
+        {"log_id": doc["log_id"]}, {"_id": 0}
+    ) or doc
+
+@api_router.get("/recurring-items/dose-logs/{date}")
+async def get_recurring_dose_logs(date: str):
+    """Get all dose logs for recurring items on a specific date."""
+    return await db.recurring_dose_logs.find(
+        {"scheduled_date": date}, {"_id": 0}
+    ).to_list(500)
+
 # ==================== Custom Entries ====================
 
 class CustomPeptideCreate(BaseModel):
