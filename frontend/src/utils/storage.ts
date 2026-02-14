@@ -19,6 +19,7 @@ export const Storage = {
 
 export const KEYS = {
   ONBOARDED: 'peptrack_onboarded',
+  WAIVER_ACCEPTED: 'peptrack_waiver_accepted',
   GOALS: 'peptrack_goals',
   TRACKER_ITEMS: 'peptrack_tracker',
   DOSE_LOGS: 'peptrack_doses',
