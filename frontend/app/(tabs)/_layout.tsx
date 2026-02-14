@@ -1,19 +1,22 @@
 import { Tabs } from 'expo-router';
 import { Text, StyleSheet } from 'react-native';
-import { colors, FONT_MARKER } from '../../src/theme';
+import { useTheme } from '../../src/context/ThemeContext';
+import { FONT_MARKER } from '../../src/theme';
 
 function TabIcon({ emoji, focused }: { emoji: string; focused: boolean }) {
   return <Text style={[styles.emoji, focused && styles.emojiFocused]}>{emoji}</Text>;
 }
 
 export default function TabLayout() {
+  const { colors } = useTheme();
+
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
         tabBarStyle: {
           backgroundColor: colors.secondary,
-          borderTopColor: 'rgba(255,255,255,0.05)',
+          borderTopColor: colors.border,
           height: 82,
           paddingBottom: 18,
           paddingTop: 8,
