@@ -737,6 +737,11 @@ const createStyles = (colors: any) => StyleSheet.create({
   themeHint: { ...typography.bodySm, color: colors.textTertiary, paddingHorizontal: spacing.md, paddingBottom: spacing.md, marginTop: -8 },
   disclaimerCard: { flexDirection: 'row', backgroundColor: 'rgba(255,209,102,0.1)', borderRadius: 12, padding: spacing.md, marginTop: spacing.lg, gap: 10 },
   disclaimerText: { ...typography.bodySm, color: colors.textTertiary, flex: 1, fontSize: 11, lineHeight: 16 },
+  // Cloud Sync styles
+  syncStatusRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: spacing.md, minHeight: 60 },
+  syncTimeText: { ...typography.bodySm, color: colors.textTertiary, fontSize: 11, marginTop: 2 },
+  syncHint: { ...typography.bodySm, color: colors.textTertiary, fontSize: 12, textAlign: 'center', marginBottom: spacing.md, paddingHorizontal: spacing.md },
+  noDataText: { ...typography.bodySm, color: colors.textTertiary, fontSize: 12 },
   // Workout recap styles
   recapCard: { backgroundColor: colors.surface, borderRadius: 16, borderWidth: 1, borderColor: colors.border, padding: spacing.md, marginBottom: spacing.md },
   recapRow: { flexDirection: 'row', justifyContent: 'space-around' },
