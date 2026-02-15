@@ -229,6 +229,31 @@ export default function ResearchScreen() {
           <Text style={styles.aiSearchBtnText}>AI Web Search</Text>
           <MaterialCommunityIcons name="arrow-right" size={18} color={colors.primaryForeground} />
         </TouchableOpacity>
+        
+        {/* Compare Button */}
+        {activeTab === 'peptides' && (
+          <View style={styles.compareRow}>
+            <TouchableOpacity 
+              testID="compare-toggle-btn" 
+              style={[styles.compareBtn, compareMode && styles.compareBtnActive]} 
+              onPress={() => { setCompareMode(!compareMode); setSelectedForCompare([]); }}
+            >
+              <MaterialCommunityIcons name="compare" size={18} color={compareMode ? colors.primaryForeground : colors.accent} />
+              <Text style={[styles.compareBtnText, compareMode && styles.compareBtnTextActive]}>
+                {compareMode ? 'Cancel Compare' : 'Compare Peptides'}
+              </Text>
+            </TouchableOpacity>
+            {selectedForCompare.length >= 2 && (
+              <TouchableOpacity 
+                testID="view-compare-btn"
+                style={styles.viewCompareBtn} 
+                onPress={() => setShowCompareModal(true)}
+              >
+                <Text style={styles.viewCompareBtnText}>Compare ({selectedForCompare.length})</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
 
         <View style={styles.tabs}>
           <TouchableOpacity testID="tab-peptides" style={[styles.tab, activeTab === 'peptides' && styles.tabActive]} onPress={() => setActiveTab('peptides')}>
