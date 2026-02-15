@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Modal, Pressable, Animated } from 'react-native';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { View, Text, StyleSheet, TouchableOpacity, Modal, Pressable } from 'react-native';
 import { useRouter, usePathname } from 'expo-router';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing } from '../theme';
