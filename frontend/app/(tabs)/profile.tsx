@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, Switch, Alert, Linking } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import Constants from 'expo-constants';
 import { useTheme } from '../../src/context/ThemeContext';
 import { typography, spacing, DISCLAIMER } from '../../src/theme';
 import { Storage, KEYS } from '../../src/utils/storage';
@@ -236,7 +237,7 @@ export default function ProfileScreen() {
         <View style={styles.settingsCard}>
           <View style={styles.settingRow}>
             <Text style={styles.settingLabel}>Version</Text>
-            <Text style={styles.settingValue}>1.0.0</Text>
+            <Text style={styles.settingValue}>{Constants.expoConfig?.version ?? '1.0.0'}</Text>
           </View>
         </View>
 
