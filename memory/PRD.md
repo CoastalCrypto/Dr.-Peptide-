@@ -249,13 +249,44 @@ All-in-one health companion app for researching, calculating dosages, tracking u
 ---
 
 ## Testing Status (Feb 15, 2026)
-- **Iteration 7**: All 6 scaffolded features tested and verified working
-  - Injection Site Tracker: PASSED
-  - PIN/Biometric Security: PASSED
-  - Peptide Comparison Tool: PASSED
-  - AI Web Search: PASSED (API working)
+- **Iteration 9**: Pre-Apple App Store submission testing - ALL PASSED
+  - Legal Disclaimer: PASSED
+  - Onboarding: PASSED  
+  - Home Calendar: PASSED
+  - Peptide Calculator: PASSED
+  - Research AI Search: PASSED
+  - AI Content Safety: PASSED (blocks inappropriate queries)
+  - Journal Logging: PASSED
+  - Profile Theme: PASSED
   - Vendor Management: PASSED
-  - Journal Trends Tab: PASSED
+  - Navigation Dropdown: PASSED
+  - Backend: 100% (59/59 tests)
+  - Frontend: 100% all features verified
+
+---
+
+## Apple App Store Readiness
+
+### Compliance Status:
+- [x] Account deletion functionality
+- [x] No "beta" or "coming soon" content
+- [x] No Android references
+- [x] AI content safety filters implemented
+- [x] Privacy Policy in-app
+- [x] Terms of Service link
+- [x] Contact email in privacy policy
+- [x] Age rating disclosure (17+)
+- [x] Medical disclaimers throughout
+
+### Files for Submission:
+- `/app/APPLE_REVIEW_GUIDE.md` - Test account guide for Apple reviewers
+- `/app/frontend/assets/images/` - App icons and screenshots
+
+### Still Needed (External):
+- [ ] Landing page at peptrackpro.com
+- [ ] Privacy policy hosted at yourdomain.com/privacy
+- [ ] Screen recordings for complex features
+- [ ] Apple Developer Account setup
 
 ---
 
