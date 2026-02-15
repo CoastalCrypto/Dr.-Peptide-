@@ -85,21 +85,22 @@ https://coastalcrypto.github.io/Dr.-Peptide-/
 
 ---
 
-## Screenshots Required
+## Screenshots (Ready to Upload)
 
-### Phone Screenshots (Required)
-1. **Home Screen** - Calendar view with Today's Schedule
-2. **Add Recurring Item** - Modal showing recurrence options
-3. **Calculator** - Dosage calculator with syringe visual
-4. **Research** - Peptide database with search
-5. **Journal** - Health logging with trend charts
-6. **Dark/Light Mode** - Theme toggle comparison
-
-### Tablet Screenshots (Optional but recommended)
-Same screens optimized for tablet layout
+### Phone Screenshots (Located in `assets/screenshots/`)
+1. **Home Screen** - `home_schedule_dark.jpg` - Calendar view with Today's Schedule
+2. **Calculator** - `calculator_dark.jpg` - Dosage calculator with syringe visual
+3. **Research** - `research_dark.jpg` - Peptide database with search
+4. **Journal** - `journal_dark.jpg` - Health logging with entries
+5. **Disclaimer** - `disclaimer_dark.jpg` - Legal disclaimer screen
+6. **Profile (Dark)** - `profile_dark.jpg` - Settings in dark mode
+7. **Profile (Light)** - `profile_light.jpg` - Settings in light mode (theme comparison)
 
 ### Feature Graphic (Google Play - 1024x500)
-Already generated: feature-graphic.png
+Located at: `assets/images/feature-graphic.png`
+
+### App Icon (512x512)
+Located at: `assets/images/icon.png`
 
 ---
 
