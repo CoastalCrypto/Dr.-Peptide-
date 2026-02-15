@@ -149,6 +149,11 @@ export function NavigationHeader() {
           </View>
         </Pressable>
       </Modal>
+      {/* Vendor Management Modal */}
+      <VendorManagement 
+        visible={showVendorManagement} 
+        onClose={() => setShowVendorManagement(false)} 
+      />
     </>
   );
 }
