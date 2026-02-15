@@ -54,11 +54,13 @@ export function NavigationHeader() {
     router.push(path as any);
   };
 
-  const isActive = (path: string) => {
-    if (path === '/(tabs)') {
-      return pathname === '/(tabs)' || pathname === '/(tabs)/index';
+  const isActive = (itemPath: string) => {
+    const lastSegment = segments[segments.length - 1];
+    if (itemPath === '/(tabs)') {
+      return !lastSegment || lastSegment === '(tabs)' || lastSegment === 'index';
     }
-    return pathname.includes(path.replace('/(tabs)', ''));
+    const itemName = itemPath.replace('/(tabs)/', '');
+    return lastSegment === itemName;
   };
 
   const styles = createStyles(colors, insets.top);
