@@ -51,6 +51,7 @@ export default function HomeScreen() {
   const [doseLogs, setDoseLogs] = useState<RecurringDoseLog[]>([]);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showLogModal, setShowLogModal] = useState(false);
+  const [showInjectionTracker, setShowInjectionTracker] = useState(false);
   const [selectedDose, setSelectedDose] = useState<ScheduledDose | null>(null);
   const [loading, setLoading] = useState(true);
   const [markedDates, setMarkedDates] = useState<Record<string, { marked: boolean; dotColor: string; count: number }>>({});
