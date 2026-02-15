@@ -853,4 +853,14 @@ const createStyles = (colors: any) => StyleSheet.create({
   compareDesc: { ...typography.bodySm, color: colors.textSecondary, marginTop: spacing.sm, lineHeight: 18 },
   closeCompareBtn: { backgroundColor: colors.primary, height: 52, borderRadius: 26, justifyContent: 'center', alignItems: 'center', marginTop: spacing.lg },
   closeCompareBtnText: { ...typography.bodyBase, color: colors.primaryForeground, fontWeight: '700' },
+  // Browse by Goal styles
+  goalToggleBtn: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: 12, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, marginHorizontal: spacing.md, marginBottom: spacing.sm },
+  goalToggleActive: { backgroundColor: colors.accent, borderColor: colors.accent },
+  goalToggleText: { ...typography.bodySm, color: colors.textPrimary, flex: 1 },
+  goalToggleTextActive: { color: colors.primaryForeground, fontWeight: '600' },
+  goalGrid: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: spacing.md, marginBottom: spacing.sm, gap: 8 },
+  goalChip: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: 20, paddingHorizontal: 12, paddingVertical: 8 },
+  goalChipActive: { backgroundColor: colors.accent, borderColor: colors.accent },
+  goalChipText: { ...typography.bodySm, color: colors.textSecondary },
+  goalChipTextActive: { color: colors.primaryForeground, fontWeight: '600' },
 });
