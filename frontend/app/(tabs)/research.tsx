@@ -395,7 +395,7 @@ export default function ResearchScreen() {
               <View style={styles.compareRow}>
                 <Text style={[styles.compareLabel, styles.compareLabelFirst]}>Attribute</Text>
                 {selectedForCompare.map(id => {
-                  const p = [...PEPTIDES, ...customPeptides].find(p => p.id === id);
+                  const p = allPeptides.find(p => p.id === id);
                   return <Text key={id} style={styles.compareHeader}>{p?.name || 'Unknown'}</Text>;
                 })}
               </View>
@@ -404,7 +404,7 @@ export default function ResearchScreen() {
               <View style={styles.compareRow}>
                 <Text style={styles.compareLabel}>Goals</Text>
                 {selectedForCompare.map(id => {
-                  const p = [...PEPTIDES, ...customPeptides].find(p => p.id === id);
+                  const p = allPeptides.find(p => p.id === id);
                   return <Text key={id} style={styles.compareValue}>{p?.categories.join(', ') || '-'}</Text>;
                 })}
               </View>
@@ -413,7 +413,7 @@ export default function ResearchScreen() {
               <View style={styles.compareRow}>
                 <Text style={styles.compareLabel}>Routes</Text>
                 {selectedForCompare.map(id => {
-                  const p = [...PEPTIDES, ...customPeptides].find(p => p.id === id);
+                  const p = allPeptides.find(p => p.id === id);
                   return <Text key={id} style={styles.compareValue}>{p?.routes.join(', ') || '-'}</Text>;
                 })}
               </View>
@@ -422,26 +422,26 @@ export default function ResearchScreen() {
               <View style={styles.compareRow}>
                 <Text style={styles.compareLabel}>Frequency</Text>
                 {selectedForCompare.map(id => {
-                  const p = [...PEPTIDES, ...customPeptides].find(p => p.id === id);
+                  const p = allPeptides.find(p => p.id === id);
                   return <Text key={id} style={styles.compareValue}>{p?.frequency || '-'}</Text>;
                 })}
               </View>
               
-              {/* Dosage Range */}
+              {/* Dosage */}
               <View style={styles.compareRow}>
-                <Text style={styles.compareLabel}>Dosage Range</Text>
+                <Text style={styles.compareLabel}>Dosage (Low)</Text>
                 {selectedForCompare.map(id => {
-                  const p = [...PEPTIDES, ...customPeptides].find(p => p.id === id);
-                  return <Text key={id} style={styles.compareValue}>{p?.dosageRange || '-'}</Text>;
+                  const p = allPeptides.find(p => p.id === id);
+                  return <Text key={id} style={styles.compareValue}>{p?.dosage?.low || '-'}</Text>;
                 })}
               </View>
               
-              {/* Half Life */}
+              {/* Cycle Length */}
               <View style={styles.compareRow}>
-                <Text style={styles.compareLabel}>Half Life</Text>
+                <Text style={styles.compareLabel}>Cycle</Text>
                 {selectedForCompare.map(id => {
-                  const p = [...PEPTIDES, ...customPeptides].find(p => p.id === id);
-                  return <Text key={id} style={styles.compareValue}>{p?.halfLife || '-'}</Text>;
+                  const p = allPeptides.find(p => p.id === id);
+                  return <Text key={id} style={styles.compareValue}>{p?.cycleLength || '-'}</Text>;
                 })}
               </View>
               
@@ -449,7 +449,7 @@ export default function ResearchScreen() {
               <View style={styles.compareRowDesc}>
                 <Text style={styles.compareLabel}>Description</Text>
                 {selectedForCompare.map(id => {
-                  const p = [...PEPTIDES, ...customPeptides].find(p => p.id === id);
+                  const p = allPeptides.find(p => p.id === id);
                   return <Text key={id} style={styles.compareDesc}>{p?.description || '-'}</Text>;
                 })}
               </View>
