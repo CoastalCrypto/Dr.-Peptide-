@@ -301,7 +301,6 @@ export default function JournalScreen() {
                   <VictoryTrendChart
                     data={chartEntries.map(e => ({ day: e.day, dayLabel: e.dayLabel, value: e.weight }))}
                     label="Weight"
-                    yKey="value"
                     colors={colors}
                     chartColor="#FF6B6B"
                     chartType="line"
@@ -312,7 +311,6 @@ export default function JournalScreen() {
                   <VictoryTrendChart
                     data={chartEntries.map(e => ({ day: e.day, dayLabel: e.dayLabel, value: e.energy }))}
                     label="Energy Level"
-                    yKey="value"
                     colors={colors}
                     chartColor="#FFD166"
                     chartType="bar"
@@ -323,7 +321,6 @@ export default function JournalScreen() {
                   <VictoryTrendChart
                     data={chartEntries.map(e => ({ day: e.day, dayLabel: e.dayLabel, value: e.sleep }))}
                     label="Sleep Quality"
-                    yKey="value"
                     colors={colors}
                     chartColor="#6C63FF"
                     chartType="bar"
@@ -334,7 +331,6 @@ export default function JournalScreen() {
                   <VictoryTrendChart
                     data={chartEntries.map(e => ({ day: e.day, dayLabel: e.dayLabel, value: e.sleepHours }))}
                     label="Sleep Duration"
-                    yKey="value"
                     colors={colors}
                     chartColor="#4ECDC4"
                     chartType="line"
@@ -345,7 +341,6 @@ export default function JournalScreen() {
                   <VictoryTrendChart
                     data={chartEntries.map(e => ({ day: e.day, dayLabel: e.dayLabel, value: e.mood }))}
                     label="Mood"
-                    yKey="value"
                     colors={colors}
                     chartColor="#06D6A0"
                     chartType="bar"
@@ -356,8 +351,13 @@ export default function JournalScreen() {
                   <VictoryTrendChart
                     data={chartEntries.map(e => ({ day: e.day, dayLabel: e.dayLabel, value: e.gym }))}
                     label="Gym Activity"
-                    yKey="value"
                     colors={colors}
+                    chartColor={colors.accent}
+                    chartType="bar"
+                    unit="mins"
+                  />
+                )}
+              </>
                     chartColor={colors.accent}
                     chartType="bar"
                     unit="mins"
