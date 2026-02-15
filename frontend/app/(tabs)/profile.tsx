@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, Switch, Alert, Linking, Modal, TextInput } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, Switch, Alert, Linking, Modal, TextInput, ActivityIndicator } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Constants from 'expo-constants';
 import { useTheme } from '../../src/context/ThemeContext';
+import { useAuth } from '../../src/context/AuthContext';
 import { typography, spacing, DISCLAIMER } from '../../src/theme';
 import { Storage, KEYS } from '../../src/utils/storage';
 import { api } from '../../src/utils/api';
@@ -10,6 +11,7 @@ import { useRouter } from 'expo-router';
 import { Platform } from 'react-native';
 import { NotificationService } from '../../src/services/notifications';
 import { AppLockService } from '../../src/services/appLock';
+import { CloudSyncService } from '../../src/services/cloudSync';
 import { VendorManagement } from '../../src/components/VendorManagement';
 
 interface Settings {
