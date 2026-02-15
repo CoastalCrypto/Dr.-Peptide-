@@ -194,7 +194,13 @@ export default function CalculatorScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      <ScrollView 
+        style={styles.container} 
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={true}
+        bounces={true}
+        nestedScrollEnabled={true}
+      >
         <Text style={styles.title}>Peptide Calculator</Text>
 
         {presets.length > 0 && (
