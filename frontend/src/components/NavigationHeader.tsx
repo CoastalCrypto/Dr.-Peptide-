@@ -119,12 +119,7 @@ export function NavigationHeader() {
                     {item.name}
                   </Text>
                   {isActive(item.path) && (
-                    <MaterialCommunityIcons 
-                      name="check" 
-                      size={20} 
-                      color={colors.accent} 
-                      style={styles.checkIcon}
-                    />
+                    <Text style={{ fontSize: 16, color: colors.accent, marginLeft: 8 }}>✓</Text>
                   )}
                 </TouchableOpacity>
               ))}
