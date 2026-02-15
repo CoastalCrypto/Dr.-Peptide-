@@ -359,6 +359,97 @@ export default function ProfileScreen() {
           </TouchableOpacity>
         )}
 
+        {/* Cloud Sync Section - Only visible when authenticated */}
+        {isAuthenticated && (
+          <>
+            <Text style={styles.sectionTitle}>Cloud Sync</Text>
+            <View style={styles.settingsCard}>
+              {/* Sync Status */}
+              <View style={styles.syncStatusRow}>
+                <View style={styles.settingInfo}>
+                  <MaterialCommunityIcons 
+                    name={syncStatus === 'syncing' ? 'cloud-sync' : syncStatus === 'synced' ? 'cloud-check' : 'cloud-outline'} 
+                    size={24} 
+                    color={syncStatus === 'synced' ? colors.success : syncStatus === 'error' ? colors.error : colors.accent} 
+                  />
+                  <View>
+                    <Text style={styles.settingLabel}>
+                      {syncStatus === 'syncing' ? 'Syncing...' : 
+                       syncStatus === 'synced' ? 'Data Synced' : 
+                       syncStatus === 'error' ? 'Sync Error' : 'Cloud Backup'}
+                    </Text>
+                    {lastSyncTime && (
+                      <Text style={styles.syncTimeText}>
+                        Last sync: {new Date(lastSyncTime).toLocaleDateString()} {new Date(lastSyncTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </Text>
+                    )}
+                  </View>
+                </View>
+                {syncStatus === 'syncing' && (
+                  <ActivityIndicator size="small" color={colors.accent} />
+                )}
+              </View>
+              <View style={styles.divider} />
+              
+              {/* Backup Button */}
+              <TouchableOpacity 
+                testID="backup-to-cloud-btn" 
+                style={styles.settingRow} 
+                onPress={handleBackupToCloud}
+                disabled={syncStatus === 'syncing'}
+              >
+                <View style={styles.settingInfo}>
+                  <MaterialCommunityIcons name="cloud-upload" size={22} color={colors.accent} />
+                  <Text style={styles.settingLabel}>Backup to Cloud</Text>
+                </View>
+                <MaterialCommunityIcons name="chevron-right" size={22} color={colors.textTertiary} />
+              </TouchableOpacity>
+              <View style={styles.divider} />
+              
+              {/* Restore Button */}
+              <TouchableOpacity 
+                testID="restore-from-cloud-btn" 
+                style={styles.settingRow} 
+                onPress={handleRestoreFromCloud}
+                disabled={syncStatus === 'syncing' || !hasCloudData}
+              >
+                <View style={styles.settingInfo}>
+                  <MaterialCommunityIcons name="cloud-download" size={22} color={hasCloudData ? colors.accent : colors.textTertiary} />
+                  <Text style={[styles.settingLabel, !hasCloudData && { color: colors.textTertiary }]}>
+                    Restore from Cloud
+                  </Text>
+                </View>
+                {hasCloudData ? (
+                  <MaterialCommunityIcons name="chevron-right" size={22} color={colors.textTertiary} />
+                ) : (
+                  <Text style={styles.noDataText}>No backup</Text>
+                )}
+              </TouchableOpacity>
+              <View style={styles.divider} />
+              
+              {/* Merge Button */}
+              <TouchableOpacity 
+                testID="merge-data-btn" 
+                style={styles.settingRow} 
+                onPress={handleMergeData}
+                disabled={syncStatus === 'syncing' || !hasCloudData}
+              >
+                <View style={styles.settingInfo}>
+                  <MaterialCommunityIcons name="merge" size={22} color={hasCloudData ? colors.accent : colors.textTertiary} />
+                  <Text style={[styles.settingLabel, !hasCloudData && { color: colors.textTertiary }]}>
+                    Merge Local & Cloud Data
+                  </Text>
+                </View>
+                <MaterialCommunityIcons name="chevron-right" size={22} color={colors.textTertiary} />
+              </TouchableOpacity>
+            </View>
+            
+            <Text style={styles.syncHint}>
+              Your data is stored locally. Use Cloud Sync to backup and restore across devices.
+            </Text>
+          </>
+        )}
+
         <Text style={styles.sectionTitle}>Appearance</Text>
         <View style={styles.settingsCard}>
           <View style={styles.settingRow}>
