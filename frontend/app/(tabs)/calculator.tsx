@@ -62,6 +62,7 @@ function SyringeVisual({ fillPct, units, unitsToDraw, colors }: { fillPct: numbe
 
 export default function CalculatorScreen() {
   const { colors } = useTheme();
+  const router = useRouter();
   const params = useLocalSearchParams<{ vialMg?: string; doseMcg?: string; bacWaterMl?: string }>();
   const [syringeIdx, setSyringeIdx] = useState(2);
   const [vialMg, setVialMg] = useState(10);
@@ -74,6 +75,11 @@ export default function CalculatorScreen() {
   const [presets, setPresets] = useState<Preset[]>([]);
   const [presetName, setPresetName] = useState('');
   const [showSavePreset, setShowSavePreset] = useState(false);
+  const [showScheduleModal, setShowScheduleModal] = useState(false);
+  const [scheduleName, setScheduleName] = useState('');
+  const [scheduleFrequency, setScheduleFrequency] = useState<'daily' | 'weekly'>('daily');
+  const [scheduleDays, setScheduleDays] = useState<number[]>([0, 1, 2, 3, 4, 5, 6]);
+  const [scheduleTime, setScheduleTime] = useState('Morning');
 
   useEffect(() => {
     if (params.vialMg) setVialMg(parseFloat(params.vialMg));
