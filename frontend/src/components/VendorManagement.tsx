@@ -46,14 +46,26 @@ export function VendorManagement({ visible, onClose }: Props) {
   // Order form state
   const [showOrderModal, setShowOrderModal] = useState(false);
   const [editingOrder, setEditingOrder] = useState<Order | null>(null);
-  const [orderForm, setOrderForm] = useState({
+  const [orderForm, setOrderForm] = useState<{
+    vendor_id: string;
+    order_number: string;
+    order_date: string;
+    items: string;
+    total_amount: string;
+    currency: string;
+    status: 'pending' | 'shipped' | 'delivered' | 'cancelled';
+    tracking_number: string;
+    tracking_url: string;
+    expected_delivery: string;
+    notes: string;
+  }>({
     vendor_id: '',
     order_number: '',
     order_date: new Date().toISOString().split('T')[0],
     items: '',
     total_amount: '',
     currency: 'USD',
-    status: 'pending' as const,
+    status: 'pending',
     tracking_number: '',
     tracking_url: '',
     expected_delivery: '',
