@@ -572,7 +572,31 @@ async def delete_custom_medication(medication_id: str):
 
 @api_router.get("/")
 async def root():
-    return {"message": "PepTrack Pro API", "status": "healthy", "version": "1.0.0"}
+    """Health check endpoint with MongoDB connection verification."""
+    try:
+        # Verify MongoDB connection
+        await client.admin.command('ping')
+        db_status = "connected"
+    except Exception as e:
+        logger.error(f"MongoDB connection error: {e}")
+        db_status = "disconnected"
+    
+    return {
+        "message": "PepTrack Pro API",
+        "status": "healthy" if db_status == "connected" else "degraded",
+        "version": "1.0.0",
+        "database": db_status
+    }
+
+@api_router.get("/health")
+async def health_check():
+    """Detailed health check for deployment monitoring."""
+    try:
+        await client.admin.command('ping')
+        return {"status": "healthy", "database": "connected"}
+    except Exception as e:
+        logger.error(f"Health check failed: {e}")
+        raise HTTPException(status_code=503, detail=f"Database unavailable: {str(e)}")
 
 app.include_router(api_router)
 
@@ -583,6 +607,16 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.on_event("startup")
+async def startup_db_client():
+    """Verify MongoDB connection on startup."""
+    try:
+        await client.admin.command('ping')
+        logger.info(f"Successfully connected to MongoDB at {mongo_url[:30]}...")
+    except Exception as e:
+        logger.error(f"Failed to connect to MongoDB: {e}")
+        # Don't raise - let the app start and handle individual request failures
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
