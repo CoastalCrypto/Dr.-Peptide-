@@ -46,11 +46,10 @@ const WORKOUT_TYPES = [
 
 const MOOD_VALUES: Record<string, number> = { great: 5, good: 4, okay: 3, low: 2, bad: 1 };
 
-// Victory Native Chart Component with touch interaction
+// Simplified Victory Native Chart Component
 function VictoryTrendChart({ 
   data, 
   label, 
-  yKey, 
   colors, 
   chartColor,
   chartType = 'bar',
@@ -58,50 +57,48 @@ function VictoryTrendChart({
 }: { 
   data: { day: string; dayLabel: string; value: number }[];
   label: string;
-  yKey: string;
   colors: any;
   chartColor: string;
   chartType?: 'bar' | 'line';
   unit?: string;
 }) {
-  const { state, isActive } = useChartPressState({ x: '', y: { [yKey]: 0 } });
   const chartWidth = Dimensions.get('window').width - spacing.lg * 2 - spacing.md * 2;
   
   if (!data.length || data.every(d => d.value === 0)) return null;
+  
+  const latestValue = data[data.length - 1]?.value || 0;
+  const maxValue = Math.max(...data.map(d => d.value), 1);
 
   return (
     <View style={{ backgroundColor: colors.surface, borderRadius: 16, padding: spacing.md, marginBottom: spacing.md, borderWidth: 1, borderColor: colors.border }}>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.sm }}>
         <Text style={{ ...typography.caption, color: colors.textTertiary }}>{label}</Text>
-        {isActive && (
-          <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 4 }}>
-            <Text style={{ ...typography.bodyLg, color: chartColor, fontWeight: '700' }}>
-              {state.y[yKey].value.toFixed(yKey === 'weight' ? 1 : 0)}
-            </Text>
-            {unit && <Text style={{ ...typography.bodySm, color: colors.textTertiary }}>{unit}</Text>}
-          </View>
-        )}
+        <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 4 }}>
+          <Text style={{ ...typography.bodyLg, color: chartColor, fontWeight: '700' }}>
+            {latestValue.toFixed(label.includes('Weight') ? 1 : 0)}
+          </Text>
+          {unit && <Text style={{ ...typography.bodySm, color: colors.textTertiary }}>{unit}</Text>}
+        </View>
       </View>
       <View style={{ height: 120 }}>
         <CartesianChart
           data={data}
           xKey="day"
-          yKeys={[yKey]}
+          yKeys={["value"]}
           domainPadding={{ left: 20, right: 20, top: 20, bottom: 10 }}
-          chartPressState={state}
           axisOptions={{
             tickCount: { x: 7, y: 4 },
             labelColor: colors.textTertiary,
             lineColor: colors.border,
-            formatXLabel: (val) => data.find(d => d.day === val)?.dayLabel || '',
-            formatYLabel: (val) => val.toFixed(0),
+            formatXLabel: (val: string) => data.find(d => d.day === val)?.dayLabel || '',
+            formatYLabel: (val: number) => String(Math.round(val)),
           }}
         >
-          {({ points, chartBounds }) => (
+          {({ points, chartBounds }: any) => (
             <>
               {chartType === 'bar' ? (
                 <Bar
-                  points={points[yKey]}
+                  points={points.value}
                   chartBounds={chartBounds}
                   color={chartColor}
                   roundedCorners={{ topLeft: 4, topRight: 4 }}
@@ -109,19 +106,11 @@ function VictoryTrendChart({
                 />
               ) : (
                 <Line
-                  points={points[yKey]}
+                  points={points.value}
                   color={chartColor}
                   strokeWidth={2.5}
                   curveType="natural"
                   connectMissingData={true}
-                />
-              )}
-              {isActive && (
-                <Circle
-                  cx={state.x.position}
-                  cy={state.y[yKey].position}
-                  r={6}
-                  color={chartColor}
                 />
               )}
             </>
