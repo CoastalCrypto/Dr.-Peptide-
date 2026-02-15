@@ -312,7 +312,8 @@ IMPORTANT: Always remind users this is educational information only and they sho
             session_id=f"websearch-{uuid.uuid4().hex[:8]}",
             system_message=system_msg
         )
-        chat.with_model("openai", "gpt-5.2")
+        # Use Gemini 3 Flash for faster response times
+        chat.with_model("gemini", "gemini-3-flash-preview")
         
         prompt = f"Please provide comprehensive research information about: {req.query}"
         
