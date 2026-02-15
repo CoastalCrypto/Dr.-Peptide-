@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, Switch, Alert, Linking } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, Switch, Alert, Linking, Modal, TextInput } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Constants from 'expo-constants';
 import { useTheme } from '../../src/context/ThemeContext';
@@ -8,6 +8,8 @@ import { Storage, KEYS } from '../../src/utils/storage';
 import { api } from '../../src/utils/api';
 import { useRouter } from 'expo-router';
 import { Platform } from 'react-native';
+import { NotificationService } from '../../src/services/notifications';
+import { AppLockService } from '../../src/services/appLock';
 
 interface Settings {
   weightUnit: string;
@@ -20,11 +22,142 @@ export default function ProfileScreen() {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
   const [settings, setSettings] = useState<Settings>({ weightUnit: 'lbs', measureUnit: 'inches', notifications: true });
+  
+  // Security state
+  const [biometricSupported, setBiometricSupported] = useState(false);
+  const [biometricEnabled, setBiometricEnabled] = useState(false);
+  const [hasPIN, setHasPIN] = useState(false);
+  const [showPINModal, setShowPINModal] = useState(false);
+  const [pinInput, setPinInput] = useState('');
+  const [pinConfirm, setPinConfirm] = useState('');
+  const [biometricName, setBiometricName] = useState('Biometrics');
+  
+  // AI Summary state
+  const [loadingSummary, setLoadingSummary] = useState(false);
+  const [weeklyRecap, setWeeklyRecap] = useState<any>(null);
 
   useEffect(() => {
     Storage.get<any>(KEYS.USER).then(u => setUser(u));
     Storage.get<Settings>(KEYS.SETTINGS).then(s => { if (s) setSettings(s); });
+    loadSecuritySettings();
+    loadWorkoutRecap();
   }, []);
+  
+  const loadSecuritySettings = async () => {
+    const { supported, types } = await AppLockService.checkBiometricSupport();
+    setBiometricSupported(supported);
+    if (supported) {
+      setBiometricName(AppLockService.getBiometricTypeName(types));
+    }
+    setBiometricEnabled(await AppLockService.isBiometricEnabled());
+    setHasPIN(await AppLockService.hasPIN());
+  };
+  
+  const loadWorkoutRecap = async () => {
+    const entries = await Storage.get<any[]>(KEYS.JOURNAL_ENTRIES) || [];
+    const weekAgo = new Date();
+    weekAgo.setDate(weekAgo.getDate() - 7);
+    
+    const weekEntries = entries.filter(e => new Date(e.date) >= weekAgo);
+    const gymEntries = weekEntries.filter(e => e.gym_activity);
+    
+    if (gymEntries.length > 0) {
+      const totalMins = gymEntries.reduce((sum, e) => sum + (e.gym_activity?.duration_mins || 0), 0);
+      const workoutTypes: Record<string, number> = {};
+      gymEntries.forEach(e => {
+        const type = e.gym_activity?.type || 'other';
+        workoutTypes[type] = (workoutTypes[type] || 0) + 1;
+      });
+      const mostFrequent = Object.entries(workoutTypes).sort((a, b) => b[1] - a[1])[0];
+      
+      setWeeklyRecap({
+        totalWorkouts: gymEntries.length,
+        totalMinutes: totalMins,
+        mostFrequentType: mostFrequent ? mostFrequent[0] : null,
+        streak: gymEntries.length,
+      });
+    }
+  };
+
+  const updateSetting = async (key: keyof Settings, value: any) => {
+    const updated = { ...settings, [key]: value };
+    setSettings(updated);
+    await Storage.set(KEYS.SETTINGS, updated);
+    
+    if (key === 'notifications') {
+      if (value) {
+        const granted = await NotificationService.requestPermissions();
+        if (!granted) {
+          Alert.alert('Permissions Required', 'Please enable notifications in your device settings.');
+          setSettings({ ...settings, notifications: false });
+        }
+      }
+    }
+  };
+  
+  const toggleBiometric = async (enabled: boolean) => {
+    if (enabled) {
+      const success = await AppLockService.authenticateWithBiometrics('Verify to enable ' + biometricName);
+      if (success) {
+        await AppLockService.setBiometricEnabled(true);
+        setBiometricEnabled(true);
+      }
+    } else {
+      await AppLockService.setBiometricEnabled(false);
+      setBiometricEnabled(false);
+    }
+  };
+  
+  const savePIN = async () => {
+    if (pinInput.length < 4) {
+      Alert.alert('Invalid PIN', 'PIN must be at least 4 digits.');
+      return;
+    }
+    if (pinInput !== pinConfirm) {
+      Alert.alert('PIN Mismatch', 'PINs do not match. Please try again.');
+      setPinInput('');
+      setPinConfirm('');
+      return;
+    }
+    
+    const success = await AppLockService.savePIN(pinInput);
+    if (success) {
+      await AppLockService.setLockEnabled(true);
+      setHasPIN(true);
+      setShowPINModal(false);
+      setPinInput('');
+      setPinConfirm('');
+      Alert.alert('Success', 'PIN has been set successfully.');
+    }
+  };
+  
+  const removePIN = async () => {
+    Alert.alert('Remove PIN', 'Are you sure you want to remove your PIN?', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Remove', style: 'destructive', onPress: async () => {
+        await AppLockService.removePIN();
+        await AppLockService.setLockEnabled(false);
+        setHasPIN(false);
+      }},
+    ]);
+  };
+  
+  const generateAISummary = async () => {
+    setLoadingSummary(true);
+    try {
+      const journal = await Storage.get<any[]>(KEYS.JOURNAL_ENTRIES) || [];
+      const items = await Storage.get<any[]>(KEYS.RECURRING_ITEMS) || [];
+      const response = await api.post('/api/ai/summary', {
+        journal_data: journal.slice(0, 10),
+        tracked_items: items.slice(0, 10),
+      });
+      Alert.alert('Weekly Health Summary', response.summary);
+    } catch (error: any) {
+      Alert.alert('Error', 'Failed to generate summary. Please try again.');
+    } finally {
+      setLoadingSummary(false);
+    }
+  };
 
   const updateSetting = async (key: keyof Settings, value: any) => {
     const updated = { ...settings, [key]: value };
