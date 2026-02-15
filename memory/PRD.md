@@ -107,6 +107,19 @@ All-in-one health companion app for researching, calculating dosages, tracking u
 - `POST /api/recurring-items/dose-log` — Log a dose (upsert)
 - `GET /api/recurring-items/dose-logs/{date}` — Get logs for date
 
+### Vendor Management APIs (NEW - Feb 15, 2026)
+- `POST /api/vendors` — Create vendor with name, website, email, phone, rating, payment_methods, is_domestic, avg_shipping_days
+- `GET /api/vendors` — List all active vendors
+- `GET /api/vendors/{vendor_id}` — Get single vendor
+- `PUT /api/vendors/{vendor_id}` — Update vendor
+- `DELETE /api/vendors/{vendor_id}` — Soft delete (mark inactive)
+- `GET /api/vendors/{vendor_id}/orders` — Get all orders for a vendor
+- `POST /api/orders` — Create order with vendor_id, items, total_amount, status, tracking
+- `GET /api/orders` — List orders (filter by vendor_id, status)
+- `GET /api/orders/{order_id}` — Get single order
+- `PUT /api/orders/{order_id}` — Update order
+- `DELETE /api/orders/{order_id}` — Hard delete order
+
 ### Existing CRUD APIs
 - `CRUD /api/tracker/items` — Tracked items (legacy)
 - `CRUD /api/tracker/doses` — Dose logs (legacy)
