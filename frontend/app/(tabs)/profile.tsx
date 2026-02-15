@@ -313,13 +313,18 @@ export default function ProfileScreen() {
           try {
             // Attempt to delete server-side data
             await api.delete('/api/auth/delete-account');
+            // Clear cloud sync data too
+            if (user?.user_id) {
+              await CloudSyncService.clearCloudData(user.user_id);
+            }
           } catch {}
           // Clear all local data
           const allKeys = Object.values(KEYS);
           for (const key of allKeys) {
             await Storage.remove(key);
           }
-          setUser(null);
+          // Log the user out
+          await logout();
           Alert.alert('Account Deleted', 'All your data has been permanently removed.');
         }},
       ]
