@@ -4,6 +4,7 @@ import { useRouter, usePathname, useSegments } from 'expo-router';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing } from '../theme';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { VendorManagement } from './VendorManagement';
 
 interface NavItem {
   name: string;
