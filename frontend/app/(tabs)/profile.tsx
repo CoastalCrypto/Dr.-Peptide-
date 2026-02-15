@@ -502,6 +502,12 @@ export default function ProfileScreen() {
           </View>
         </View>
       </Modal>
+      
+      {/* Vendor Management Modal */}
+      <VendorManagement 
+        visible={showVendorManagement} 
+        onClose={() => setShowVendorManagement(false)} 
+      />
     </SafeAreaView>
   );
 }
