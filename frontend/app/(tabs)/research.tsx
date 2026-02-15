@@ -379,6 +379,93 @@ export default function ResearchScreen() {
         )}
       </View>
 
+      {/* Compare Peptides Modal */}
+      <Modal visible={showCompareModal} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <View style={styles.compareModal}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Compare Peptides</Text>
+              <TouchableOpacity onPress={() => setShowCompareModal(false)}>
+                <MaterialCommunityIcons name="close" size={24} color={colors.textTertiary} />
+              </TouchableOpacity>
+            </View>
+            
+            <ScrollView style={styles.compareContent}>
+              {/* Header row */}
+              <View style={styles.compareRow}>
+                <Text style={[styles.compareLabel, styles.compareLabelFirst]}>Attribute</Text>
+                {selectedForCompare.map(id => {
+                  const p = [...PEPTIDES, ...customPeptides].find(p => p.id === id);
+                  return <Text key={id} style={styles.compareHeader}>{p?.name || 'Unknown'}</Text>;
+                })}
+              </View>
+              
+              {/* Categories */}
+              <View style={styles.compareRow}>
+                <Text style={styles.compareLabel}>Goals</Text>
+                {selectedForCompare.map(id => {
+                  const p = [...PEPTIDES, ...customPeptides].find(p => p.id === id);
+                  return <Text key={id} style={styles.compareValue}>{p?.categories.join(', ') || '-'}</Text>;
+                })}
+              </View>
+              
+              {/* Routes */}
+              <View style={styles.compareRow}>
+                <Text style={styles.compareLabel}>Routes</Text>
+                {selectedForCompare.map(id => {
+                  const p = [...PEPTIDES, ...customPeptides].find(p => p.id === id);
+                  return <Text key={id} style={styles.compareValue}>{p?.routes.join(', ') || '-'}</Text>;
+                })}
+              </View>
+              
+              {/* Frequency */}
+              <View style={styles.compareRow}>
+                <Text style={styles.compareLabel}>Frequency</Text>
+                {selectedForCompare.map(id => {
+                  const p = [...PEPTIDES, ...customPeptides].find(p => p.id === id);
+                  return <Text key={id} style={styles.compareValue}>{p?.frequency || '-'}</Text>;
+                })}
+              </View>
+              
+              {/* Dosage Range */}
+              <View style={styles.compareRow}>
+                <Text style={styles.compareLabel}>Dosage Range</Text>
+                {selectedForCompare.map(id => {
+                  const p = [...PEPTIDES, ...customPeptides].find(p => p.id === id);
+                  return <Text key={id} style={styles.compareValue}>{p?.dosageRange || '-'}</Text>;
+                })}
+              </View>
+              
+              {/* Half Life */}
+              <View style={styles.compareRow}>
+                <Text style={styles.compareLabel}>Half Life</Text>
+                {selectedForCompare.map(id => {
+                  const p = [...PEPTIDES, ...customPeptides].find(p => p.id === id);
+                  return <Text key={id} style={styles.compareValue}>{p?.halfLife || '-'}</Text>;
+                })}
+              </View>
+              
+              {/* Description */}
+              <View style={styles.compareRowDesc}>
+                <Text style={styles.compareLabel}>Description</Text>
+                {selectedForCompare.map(id => {
+                  const p = [...PEPTIDES, ...customPeptides].find(p => p.id === id);
+                  return <Text key={id} style={styles.compareDesc}>{p?.description || '-'}</Text>;
+                })}
+              </View>
+            </ScrollView>
+            
+            <TouchableOpacity 
+              testID="close-compare-btn"
+              style={styles.closeCompareBtn} 
+              onPress={() => { setShowCompareModal(false); setCompareMode(false); setSelectedForCompare([]); }}
+            >
+              <Text style={styles.closeCompareBtnText}>Done</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
       {/* AI Web Search Modal */}
       <Modal visible={showWebSearch} animationType="slide" transparent>
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.flex1}>
