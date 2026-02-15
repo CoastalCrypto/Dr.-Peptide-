@@ -881,6 +881,30 @@ async def health_check():
         logger.error(f"Health check failed: {e}")
         raise HTTPException(status_code=503, detail=f"Database unavailable: {str(e)}")
 
+# ==================== OpenFDA Medication Search ====================
+
+@api_router.get("/medications/fda/search")
+async def fda_medication_search(query: str, limit: int = 20, skip: int = 0):
+    """
+    Search FDA drug labels for medication information.
+    Returns live data from OpenFDA API.
+    """
+    if not query.strip():
+        raise HTTPException(status_code=400, detail="Search query is required")
+    
+    result = await search_medications(query, limit, skip)
+    return result
+
+@api_router.get("/medications/fda/{set_id}")
+async def fda_medication_detail(set_id: str):
+    """
+    Get detailed medication information from FDA by set_id.
+    """
+    result = await get_medication_details(set_id)
+    if not result:
+        raise HTTPException(status_code=404, detail="Medication not found")
+    return result
+
 # ==================== Cloud Sync Endpoints ====================
 
 class SyncBackupRequest(BaseModel):
