@@ -332,7 +332,8 @@ export default function ResearchScreen() {
                   <Text style={styles.metaText}>{item.frequency}</Text>
                 </View>
               </TouchableOpacity>
-            )}
+              );
+            }}
             ListEmptyComponent={
               <View style={styles.empty}>
                 <MaterialCommunityIcons name="flask-empty" size={48} color={colors.textTertiary} />
