@@ -30,7 +30,7 @@ next-env.d.ts
 dist/
 dist
 
-# Credentials (but NOT .env files - those are needed for deployment)
+# Credentials and secrets
 *token.json*
 *credentials.json*
 
@@ -77,7 +77,13 @@ agenthub/agents/youtube/db
 
 # Mobile development
 android-sdk/
--e 
+.metro-cache/
+.expo/
+
+# Google Play service account key (NEVER commit this)
+google-service-account.json
+
 # Environment files
 *.env
 *.env.*
+!.env.example

@@ -2,7 +2,8 @@ import { useState, useRef } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, Dimensions } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { colors, typography, spacing, DISCLAIMER } from '../src/theme';
+import { useTheme } from '../src/context/ThemeContext';
+import { typography, spacing, DISCLAIMER } from '../src/theme';
 import { Storage, KEYS } from '../src/utils/storage';
 
 const { width } = Dimensions.get('window');
@@ -18,7 +19,7 @@ const slides = [
   {
     icon: 'book-search' as const,
     title: 'Research Database',
-    desc: 'Access detailed profiles for 15+ peptides and common medications with dosage ranges, side effects, and protocols.',
+    desc: 'Access detailed profiles for 50+ peptides and common medications with dosage ranges, side effects, and protocols.',
   },
   {
     icon: 'heart-pulse' as const,
@@ -29,6 +30,7 @@ const slides = [
 
 export default function OnboardingScreen() {
   const router = useRouter();
+  const { colors } = useTheme();
   const [page, setPage] = useState(0);
   const [selectedGoals, setSelectedGoals] = useState<string[]>([]);
   const scrollRef = useRef<ScrollView>(null);
@@ -50,6 +52,8 @@ export default function OnboardingScreen() {
   const toggleGoal = (g: string) => {
     setSelectedGoals(prev => prev.includes(g) ? prev.filter(x => x !== g) : [...prev, g]);
   };
+
+  const styles = createStyles(colors);
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -114,7 +118,7 @@ export default function OnboardingScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background },
   scroll: { flex: 1 },
   page: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: spacing.xl },

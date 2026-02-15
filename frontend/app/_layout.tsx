@@ -19,6 +19,7 @@ function RootLayoutContent() {
         <Stack.Screen name="waiver" />
         <Stack.Screen name="onboarding" />
         <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="privacy-policy" options={{ presentation: 'modal' }} />
         <Stack.Screen
           name="peptide/[id]"
           options={{

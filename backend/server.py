@@ -194,6 +194,36 @@ async def auth_logout(request: Request, response: Response):
     response.delete_cookie("session_token", path="/")
     return {"message": "Logged out"}
 
+@api_router.delete("/auth/delete-account")
+async def delete_account(request: Request, response: Response):
+    """Delete user account and all associated data (Play Store requirement)."""
+    token = request.cookies.get("session_token")
+    auth_h = request.headers.get("Authorization", "")
+    if auth_h.startswith("Bearer "):
+        token = auth_h[7:]
+    if not token:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    session = await db.user_sessions.find_one({"session_token": token}, {"_id": 0})
+    if not session:
+        raise HTTPException(status_code=401, detail="Invalid session")
+    user_id = session["user_id"]
+    try:
+        # Delete all user data across all collections
+        await db.users.delete_one({"user_id": user_id})
+        await db.user_sessions.delete_many({"user_id": user_id})
+        await db.tracker_items.delete_many({"user_id": user_id})
+        await db.dose_logs.delete_many({"user_id": user_id})
+        await db.journal_entries.delete_many({"user_id": user_id})
+        await db.calculator_presets.delete_many({"user_id": user_id})
+        await db.recurring_items.delete_many({"user_id": user_id})
+        await db.recurring_dose_logs.delete_many({"user_id": user_id})
+        response.delete_cookie("session_token", path="/")
+        logger.info(f"Account deleted: {user_id}")
+        return {"message": "Account and all data permanently deleted"}
+    except Exception as e:
+        logger.error(f"Account deletion error: {e}")
+        raise HTTPException(status_code=500, detail="Failed to delete account")
+
 # ==================== AI Endpoints ====================
 
 @api_router.post("/ai/ask")
@@ -610,10 +640,22 @@ app.add_middleware(
 
 @app.on_event("startup")
 async def startup_db_client():
-    """Verify MongoDB connection on startup."""
+    """Verify MongoDB connection and create indexes on startup."""
     try:
         await client.admin.command('ping')
         logger.info(f"Successfully connected to MongoDB at {mongo_url[:30]}...")
+        # Create indexes for production query performance
+        await db.users.create_index("user_id", unique=True)
+        await db.users.create_index("email", unique=True)
+        await db.user_sessions.create_index("session_token", unique=True)
+        await db.user_sessions.create_index("user_id")
+        await db.user_sessions.create_index("expires_at", expireAfterSeconds=0)
+        await db.recurring_items.create_index("user_id")
+        await db.recurring_dose_logs.create_index([("user_id", 1), ("scheduled_date", 1)])
+        await db.journal_entries.create_index([("user_id", 1), ("date", -1)])
+        await db.tracker_items.create_index("user_id")
+        await db.calculator_presets.create_index("user_id")
+        logger.info("MongoDB indexes created/verified")
     except Exception as e:
         logger.error(f"Failed to connect to MongoDB: {e}")
         # Don't raise - let the app start and handle individual request failures

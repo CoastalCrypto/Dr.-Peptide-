@@ -75,13 +75,13 @@ peptide,tracker,supplement,medication,health,dosage,calculator,reconstitution,bp
 **Apple:** 17+ (Medical/Health Information)
 
 ## Privacy Policy URL
-https://peptrackpro.com/privacy-policy
+https://coastalcrypto.github.io/Dr.-Peptide-/privacy-policy.html
 
 ## Support URL
-https://peptrackpro.com/support
+https://coastalcrypto.github.io/Dr.-Peptide-/
 
 ## Marketing URL
-https://peptrackpro.com
+https://coastalcrypto.github.io/Dr.-Peptide-/
 
 ---
 

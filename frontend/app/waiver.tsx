@@ -2,11 +2,13 @@ import { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { colors, typography, spacing, FONT_MARKER } from '../src/theme';
+import { useTheme } from '../src/context/ThemeContext';
+import { typography, spacing, FONT_MARKER } from '../src/theme';
 import { Storage, KEYS } from '../src/utils/storage';
 
 export default function WaiverScreen() {
   const router = useRouter();
+  const { colors } = useTheme();
   const [accepted, setAccepted] = useState(false);
 
   const handleAccept = async () => {
@@ -18,6 +20,8 @@ export default function WaiverScreen() {
       router.replace('/onboarding');
     }
   };
+
+  const styles = createStyles(colors);
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -91,7 +95,7 @@ export default function WaiverScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any) => StyleSheet.create({
   safe: {
     flex: 1,
     backgroundColor: colors.background,

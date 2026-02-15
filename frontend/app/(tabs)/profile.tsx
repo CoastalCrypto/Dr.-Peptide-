@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, Switch, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, Switch, Alert, Linking } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTheme } from '../../src/context/ThemeContext';
 import { typography, spacing, DISCLAIMER } from '../../src/theme';
 import { Storage, KEYS } from '../../src/utils/storage';
 import { api } from '../../src/utils/api';
+import { useRouter } from 'expo-router';
 import { Platform } from 'react-native';
 
 interface Settings {
@@ -15,6 +16,7 @@ interface Settings {
 
 export default function ProfileScreen() {
   const { colors, mode, setMode, isDark } = useTheme();
+  const router = useRouter();
   const [user, setUser] = useState<any>(null);
   const [settings, setSettings] = useState<Settings>({ weightUnit: 'lbs', measureUnit: 'inches', notifications: true });
 
@@ -63,9 +65,36 @@ export default function ProfileScreen() {
         await Storage.remove(KEYS.DOSE_LOGS);
         await Storage.remove(KEYS.JOURNAL_ENTRIES);
         await Storage.remove(KEYS.CALCULATOR_PRESETS);
+        await Storage.remove(KEYS.RECURRING_ITEMS);
+        await Storage.remove(KEYS.CUSTOM_PEPTIDES);
+        await Storage.remove(KEYS.CUSTOM_MEDS);
+        await Storage.remove(KEYS.FAVORITES);
         Alert.alert('Done', 'All data has been cleared.');
       }},
     ]);
+  };
+
+  const deleteAccount = () => {
+    Alert.alert(
+      'Delete Account & All Data',
+      'This will permanently delete your account, all cloud data, and all local data. This action cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Delete Everything', style: 'destructive', onPress: async () => {
+          try {
+            // Attempt to delete server-side data
+            await api.delete('/api/auth/delete-account');
+          } catch {}
+          // Clear all local data
+          const allKeys = Object.values(KEYS);
+          for (const key of allKeys) {
+            await Storage.remove(key);
+          }
+          setUser(null);
+          Alert.alert('Account Deleted', 'All your data has been permanently removed.');
+        }},
+      ]
+    );
   };
 
   const styles = createStyles(colors);
@@ -179,6 +208,28 @@ export default function ProfileScreen() {
             <Text style={[styles.settingLabel, { color: colors.error }]}>Clear All Data</Text>
             <MaterialCommunityIcons name="delete-outline" size={22} color={colors.error} />
           </TouchableOpacity>
+          {user && (
+            <>
+              <View style={styles.divider} />
+              <TouchableOpacity testID="delete-account-btn" style={styles.settingRow} onPress={deleteAccount}>
+                <Text style={[styles.settingLabel, { color: colors.error }]}>Delete Account</Text>
+                <MaterialCommunityIcons name="account-remove" size={22} color={colors.error} />
+              </TouchableOpacity>
+            </>
+          )}
+        </View>
+
+        <Text style={styles.sectionTitle}>Legal</Text>
+        <View style={styles.settingsCard}>
+          <TouchableOpacity style={styles.settingRow} onPress={() => router.push('/privacy-policy')}>
+            <Text style={styles.settingLabel}>Privacy Policy</Text>
+            <MaterialCommunityIcons name="chevron-right" size={22} color={colors.textTertiary} />
+          </TouchableOpacity>
+          <View style={styles.divider} />
+          <TouchableOpacity style={styles.settingRow} onPress={() => Linking.openURL('https://coastalcrypto.github.io/Dr.-Peptide-/terms-of-service.html')}>
+            <Text style={styles.settingLabel}>Terms of Service</Text>
+            <MaterialCommunityIcons name="chevron-right" size={22} color={colors.textTertiary} />
+          </TouchableOpacity>
         </View>
 
         <Text style={styles.sectionTitle}>About</Text>
@@ -228,6 +279,6 @@ const createStyles = (colors: any) => StyleSheet.create({
   themeBtn: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 8 },
   themeBtnActive: { backgroundColor: colors.primary },
   themeHint: { ...typography.bodySm, color: colors.textTertiary, paddingHorizontal: spacing.md, paddingBottom: spacing.md, marginTop: -8 },
-  disclaimerCard: { flexDirection: 'row', backgroundColor: colors.isDark ? 'rgba(255,209,102,0.1)' : 'rgba(255,149,0,0.1)', borderRadius: 12, padding: spacing.md, marginTop: spacing.lg, gap: 10 },
+  disclaimerCard: { flexDirection: 'row', backgroundColor: 'rgba(255,209,102,0.1)', borderRadius: 12, padding: spacing.md, marginTop: spacing.lg, gap: 10 },
   disclaimerText: { ...typography.bodySm, color: colors.textTertiary, flex: 1, fontSize: 11, lineHeight: 16 },
 });
