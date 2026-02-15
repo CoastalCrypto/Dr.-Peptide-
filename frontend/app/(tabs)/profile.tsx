@@ -159,12 +159,6 @@ export default function ProfileScreen() {
     }
   };
 
-  const updateSetting = async (key: keyof Settings, value: any) => {
-    const updated = { ...settings, [key]: value };
-    setSettings(updated);
-    await Storage.set(KEYS.SETTINGS, updated);
-  };
-
   const handleGoogleAuth = () => {
     // REMINDER: DO NOT HARDCODE THE URL, OR ADD ANY FALLBACKS OR REDIRECT URLS, THIS BREAKS THE AUTH
     if (Platform.OS === 'web') {
