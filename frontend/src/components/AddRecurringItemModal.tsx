@@ -23,6 +23,7 @@ import {
   TIME_SLOTS,
 } from '../types/recurring';
 import { recurringItemsApi } from '../utils/api';
+import { NotificationServiceV2 } from '../services/notificationsV2';
 
 interface AddRecurringItemModalProps {
   visible: boolean;
