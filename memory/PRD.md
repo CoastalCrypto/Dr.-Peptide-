@@ -231,6 +231,18 @@ All-in-one health companion app for researching, calculating dosages, tracking u
   - Cloud Sync service with backup/restore/merge
   - Profile page with Cloud Sync UI section
   - Backend sync endpoints (backup, restore, status, clear)
+- [x] **AI Weekly Health Summaries** - Auto-generate + on-demand (Feb 15, 2026)
+  - WeeklySummaryService for generating/storing summaries
+  - Auto-check and generate on app launch if 7+ days since last
+  - On-demand generation via Profile page
+  - Summary modal with stats grid and AI insights
+- [x] **Full-text Search in Research** - Enhanced search across all peptide fields (Feb 15, 2026)
+- [x] **Browse by Goal Filtering** - Collapsible goal filter with icons (Feb 15, 2026)
+- [x] **Notification Settings** - Dose reminders, Journal reminder, Weekly summary alert (Feb 15, 2026)
+- [x] **OpenFDA API Integration** - Live medication data from FDA (Feb 15, 2026)
+  - Backend service: `/app/backend/services/openfda.py`
+  - Endpoints: `/api/medications/fda/search`, `/api/medications/fda/{set_id}`
+  - Searches by generic name, brand name, drug class, substance
 
 ---
 
