@@ -529,4 +529,21 @@ const createStyles = (colors: any) => StyleSheet.create({
   themeHint: { ...typography.bodySm, color: colors.textTertiary, paddingHorizontal: spacing.md, paddingBottom: spacing.md, marginTop: -8 },
   disclaimerCard: { flexDirection: 'row', backgroundColor: 'rgba(255,209,102,0.1)', borderRadius: 12, padding: spacing.md, marginTop: spacing.lg, gap: 10 },
   disclaimerText: { ...typography.bodySm, color: colors.textTertiary, flex: 1, fontSize: 11, lineHeight: 16 },
+  // Workout recap styles
+  recapCard: { backgroundColor: colors.surface, borderRadius: 16, borderWidth: 1, borderColor: colors.border, padding: spacing.md, marginBottom: spacing.md },
+  recapRow: { flexDirection: 'row', justifyContent: 'space-around' },
+  recapItem: { alignItems: 'center' },
+  recapValue: { ...typography.h2, color: colors.textPrimary, marginTop: 4 },
+  recapLabel: { ...typography.caption, color: colors.textTertiary },
+  recapBadge: { backgroundColor: colors.accent, paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, alignSelf: 'center', marginTop: spacing.md },
+  recapBadgeText: { ...typography.bodySm, color: colors.primaryForeground, fontWeight: '700' },
+  // PIN Modal styles
+  modalOverlay: { flex: 1, backgroundColor: colors.overlay, justifyContent: 'flex-end' },
+  pinModal: { backgroundColor: colors.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: spacing.lg, paddingBottom: 40 },
+  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.lg },
+  modalTitle: { ...typography.h2, color: colors.textPrimary },
+  pinLabel: { ...typography.caption, color: colors.textTertiary, marginBottom: spacing.xs, marginTop: spacing.sm },
+  pinInput: { height: 52, backgroundColor: colors.secondary, borderRadius: 12, borderWidth: 1, borderColor: colors.border, paddingHorizontal: spacing.md, color: colors.textPrimary, fontSize: 24, textAlign: 'center', letterSpacing: 8 },
+  savePinBtn: { backgroundColor: colors.primary, height: 52, borderRadius: 26, justifyContent: 'center', alignItems: 'center', marginTop: spacing.lg },
+  savePinBtnText: { ...typography.bodyBase, color: colors.primaryForeground, fontWeight: '700' },
 });
