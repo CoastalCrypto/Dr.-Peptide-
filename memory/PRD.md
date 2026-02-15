@@ -250,7 +250,7 @@ All-in-one health companion app for researching, calculating dosages, tracking u
 ---
 
 ## Preview URL
-https://health-companion-195.preview.emergentagent.com
+https://vendor-track-5.preview.emergentagent.com
 
 ---
 
