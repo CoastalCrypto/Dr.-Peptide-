@@ -42,6 +42,93 @@ function AdherenceRing({ taken, total, colors }: { taken: number; total: number;
   );
 }
 
+function WorkoutStreakBadge() {
+  const { colors } = useTheme();
+  const [streak, setStreak] = useState<{ count: number; message: string; showBadge: boolean }>({ count: 0, message: '', showBadge: false });
+
+  useEffect(() => {
+    loadStreak();
+  }, []);
+
+  const loadStreak = async () => {
+    try {
+      // Get workout history from storage
+      const history = await Storage.get<string[]>(KEYS.WORKOUT_HISTORY) || [];
+      
+      // Calculate consecutive days streak
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      let count = 0;
+      for (let i = 0; i < 30; i++) {
+        const checkDate = new Date(today);
+        checkDate.setDate(checkDate.getDate() - i);
+        const dateStr = checkDate.toISOString().split('T')[0];
+        
+        if (history.includes(dateStr)) {
+          count++;
+        } else if (i > 0) {
+          // Allow today to be missing (haven't worked out yet today)
+          break;
+        }
+      }
+      
+      // Generate motivational message
+      let message = '';
+      if (count >= 7) message = 'Legendary! You\'re unstoppable!';
+      else if (count >= 5) message = 'Amazing dedication!';
+      else if (count >= 3) message = 'Keep it going!';
+      else if (count >= 1) message = 'Good start!';
+      
+      setStreak({ count, message, showBadge: count >= 2 });
+    } catch (err) {
+      console.error('Error loading streak:', err);
+    }
+  };
+
+  if (!streak.showBadge) return null;
+
+  const getStreakEmoji = () => {
+    if (streak.count >= 7) return '💪🔥';
+    if (streak.count >= 5) return '🔥🔥';
+    if (streak.count >= 3) return '🔥';
+    return '✨';
+  };
+
+  return (
+    <View style={{
+      backgroundColor: colors.surface,
+      borderRadius: 16,
+      padding: spacing.md,
+      marginBottom: spacing.md,
+      borderWidth: 2,
+      borderColor: streak.count >= 7 ? '#FFD700' : streak.count >= 5 ? '#FF6B35' : colors.accent,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.md,
+    }} testID="workout-streak-badge">
+      <View style={{
+        width: 56,
+        height: 56,
+        borderRadius: 28,
+        backgroundColor: streak.count >= 7 ? '#FFD700' : streak.count >= 5 ? '#FF6B35' : colors.accent,
+        justifyContent: 'center',
+        alignItems: 'center',
+      }}>
+        <Text style={{ fontSize: 24 }}>{getStreakEmoji()}</Text>
+      </View>
+      <View style={{ flex: 1 }}>
+        <Text style={{ ...typography.h3, color: colors.textPrimary }}>
+          {streak.count}-Day Streak!
+        </Text>
+        <Text style={{ ...typography.bodySm, color: colors.textTertiary }}>
+          {streak.message}
+        </Text>
+      </View>
+    </View>
+  );
+}
+
 export default function HomeScreen() {
   const { colors } = useTheme();
   const today = new Date().toISOString().split('T')[0];
