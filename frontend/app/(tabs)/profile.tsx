@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, Switch, Alert, Linking } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import Constants from 'expo-constants';
 import { useTheme } from '../../src/context/ThemeContext';
 import { typography, spacing, DISCLAIMER } from '../../src/theme';
 import { Storage, KEYS } from '../../src/utils/storage';
@@ -129,31 +130,31 @@ export default function ProfileScreen() {
         <View style={styles.settingsCard}>
           <View style={styles.settingRow}>
             <View style={styles.settingInfo}>
-              <MaterialCommunityIcons 
-                name={isDark ? 'moon-waning-crescent' : 'white-balance-sunny'} 
-                size={22} 
-                color={colors.accent} 
+              <MaterialCommunityIcons
+                name={isDark ? 'moon-waning-crescent' : 'white-balance-sunny'}
+                size={22}
+                color={colors.accent}
               />
               <Text style={styles.settingLabel}>Theme</Text>
             </View>
             <View style={styles.themeToggle}>
-              <TouchableOpacity 
+              <TouchableOpacity
                 testID="theme-light"
-                style={[styles.themeBtn, mode === 'light' && styles.themeBtnActive]} 
+                style={[styles.themeBtn, mode === 'light' && styles.themeBtnActive]}
                 onPress={() => setMode('light')}
               >
                 <MaterialCommunityIcons name="white-balance-sunny" size={18} color={mode === 'light' ? colors.primaryForeground : colors.textTertiary} />
               </TouchableOpacity>
-              <TouchableOpacity 
+              <TouchableOpacity
                 testID="theme-system"
-                style={[styles.themeBtn, mode === 'system' && styles.themeBtnActive]} 
+                style={[styles.themeBtn, mode === 'system' && styles.themeBtnActive]}
                 onPress={() => setMode('system')}
               >
                 <MaterialCommunityIcons name="cellphone" size={18} color={mode === 'system' ? colors.primaryForeground : colors.textTertiary} />
               </TouchableOpacity>
-              <TouchableOpacity 
+              <TouchableOpacity
                 testID="theme-dark"
-                style={[styles.themeBtn, mode === 'dark' && styles.themeBtnActive]} 
+                style={[styles.themeBtn, mode === 'dark' && styles.themeBtnActive]}
                 onPress={() => setMode('dark')}
               >
                 <MaterialCommunityIcons name="moon-waning-crescent" size={18} color={mode === 'dark' ? colors.primaryForeground : colors.textTertiary} />
@@ -236,7 +237,7 @@ export default function ProfileScreen() {
         <View style={styles.settingsCard}>
           <View style={styles.settingRow}>
             <Text style={styles.settingLabel}>Version</Text>
-            <Text style={styles.settingValue}>1.0.0</Text>
+            <Text style={styles.settingValue}>{Constants.expoConfig?.version ?? '1.0.0'}</Text>
           </View>
         </View>
 
