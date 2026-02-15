@@ -129,6 +129,22 @@ export function NavigationHeader() {
                   )}
                 </TouchableOpacity>
               ))}
+              
+              {/* Divider */}
+              <View style={styles.menuDivider} />
+              
+              {/* Vendor Management */}
+              <TouchableOpacity
+                testID="nav-vendors"
+                style={styles.menuItem}
+                onPress={() => {
+                  setMenuOpen(false);
+                  setShowVendorManagement(true);
+                }}
+              >
+                <Text style={styles.menuEmoji}>🏪</Text>
+                <Text style={styles.menuItemText}>Vendor Management</Text>
+              </TouchableOpacity>
             </View>
           </View>
         </Pressable>
