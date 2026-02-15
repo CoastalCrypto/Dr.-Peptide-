@@ -235,6 +235,56 @@ export default function JournalScreen() {
                 ))}
               </View>
 
+              <Text style={styles.fieldLabel}>Gym Activity</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.workoutScroll}>
+                <View style={styles.workoutRow}>
+                  {WORKOUT_TYPES.map(w => (
+                    <TouchableOpacity 
+                      key={w.value} 
+                      testID={`workout-${w.value}`}
+                      style={[styles.workoutBtn, gymType === w.value && styles.workoutBtnActive]} 
+                      onPress={() => setGymType(gymType === w.value ? '' : w.value)}
+                    >
+                      <MaterialCommunityIcons name={w.icon as any} size={24} color={gymType === w.value ? colors.primaryForeground : colors.textSecondary} />
+                      <Text style={[styles.workoutLabel, gymType === w.value && styles.workoutLabelActive]}>{w.label}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </ScrollView>
+              
+              {gymType !== '' && (
+                <>
+                  <View style={styles.gymInputRow}>
+                    <View style={styles.gymInputGroup}>
+                      <Text style={styles.gymInputLabel}>Duration (mins)</Text>
+                      <TextInput 
+                        testID="journal-gym-duration"
+                        style={styles.gymInput} 
+                        placeholder="45" 
+                        placeholderTextColor={colors.textTertiary} 
+                        value={gymDuration} 
+                        onChangeText={setGymDuration} 
+                        keyboardType="numeric" 
+                      />
+                    </View>
+                    <View style={styles.gymInputGroup}>
+                      <Text style={styles.gymInputLabel}>Intensity (1-10)</Text>
+                      <View style={styles.intensityRow}>
+                        {[1,2,3,4,5,6,7,8,9,10].map(n => (
+                          <TouchableOpacity 
+                            key={n} 
+                            style={[styles.intensityBtn, gymIntensity === n && styles.intensityBtnActive]} 
+                            onPress={() => setGymIntensity(n)}
+                          >
+                            <Text style={[styles.intensityText, gymIntensity === n && styles.intensityTextActive]}>{n}</Text>
+                          </TouchableOpacity>
+                        ))}
+                      </View>
+                    </View>
+                  </View>
+                </>
+              )}
+
               <Text style={styles.fieldLabel}>Notes</Text>
               <TextInput testID="journal-notes" style={[styles.input, styles.notesInput]} placeholder="How are you feeling today?" placeholderTextColor={colors.textTertiary} value={notes} onChangeText={setNotes} multiline />
 
