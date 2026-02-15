@@ -352,6 +352,76 @@ export default function ProfileScreen() {
             </>
           )}
         </View>
+        
+        <Text style={styles.sectionTitle}>Security</Text>
+        <View style={styles.settingsCard}>
+          {biometricSupported && (
+            <>
+              <View style={styles.settingRow}>
+                <View style={styles.settingInfo}>
+                  <MaterialCommunityIcons name="fingerprint" size={22} color={colors.accent} />
+                  <Text style={styles.settingLabel}>{biometricName}</Text>
+                </View>
+                <Switch 
+                  testID="biometric-switch"
+                  value={biometricEnabled} 
+                  onValueChange={toggleBiometric} 
+                  trackColor={{ true: colors.accent, false: colors.secondary }} 
+                  thumbColor={colors.primaryForeground} 
+                />
+              </View>
+              <View style={styles.divider} />
+            </>
+          )}
+          <TouchableOpacity testID="pin-setup-btn" style={styles.settingRow} onPress={() => hasPIN ? removePIN() : setShowPINModal(true)}>
+            <View style={styles.settingInfo}>
+              <MaterialCommunityIcons name="lock" size={22} color={colors.accent} />
+              <Text style={styles.settingLabel}>{hasPIN ? 'Remove PIN Lock' : 'Set PIN Lock'}</Text>
+            </View>
+            <MaterialCommunityIcons name={hasPIN ? 'check-circle' : 'chevron-right'} size={22} color={hasPIN ? colors.success : colors.textTertiary} />
+          </TouchableOpacity>
+        </View>
+        
+        <Text style={styles.sectionTitle}>AI Features</Text>
+        <View style={styles.settingsCard}>
+          <TouchableOpacity testID="ai-summary-btn" style={styles.settingRow} onPress={generateAISummary} disabled={loadingSummary}>
+            <View style={styles.settingInfo}>
+              <MaterialCommunityIcons name="brain" size={22} color={colors.accent} />
+              <Text style={styles.settingLabel}>{loadingSummary ? 'Generating...' : 'Generate Weekly Health Summary'}</Text>
+            </View>
+            <MaterialCommunityIcons name="chevron-right" size={22} color={colors.textTertiary} />
+          </TouchableOpacity>
+        </View>
+        
+        {weeklyRecap && (
+          <>
+            <Text style={styles.sectionTitle}>Weekly Workout Recap</Text>
+            <View style={styles.recapCard}>
+              <View style={styles.recapRow}>
+                <View style={styles.recapItem}>
+                  <MaterialCommunityIcons name="dumbbell" size={28} color={colors.accent} />
+                  <Text style={styles.recapValue}>{weeklyRecap.totalWorkouts}</Text>
+                  <Text style={styles.recapLabel}>Workouts</Text>
+                </View>
+                <View style={styles.recapItem}>
+                  <MaterialCommunityIcons name="clock-outline" size={28} color={colors.accent} />
+                  <Text style={styles.recapValue}>{weeklyRecap.totalMinutes}</Text>
+                  <Text style={styles.recapLabel}>Minutes</Text>
+                </View>
+                <View style={styles.recapItem}>
+                  <MaterialCommunityIcons name="fire" size={28} color={colors.accent} />
+                  <Text style={styles.recapValue}>{weeklyRecap.streak}</Text>
+                  <Text style={styles.recapLabel}>Streak</Text>
+                </View>
+              </View>
+              {weeklyRecap.mostFrequentType && (
+                <View style={styles.recapBadge}>
+                  <Text style={styles.recapBadgeText}>Most Active: {weeklyRecap.mostFrequentType.charAt(0).toUpperCase() + weeklyRecap.mostFrequentType.slice(1)}</Text>
+                </View>
+              )}
+            </View>
+          </>
+        )}
 
         <Text style={styles.sectionTitle}>Legal</Text>
         <View style={styles.settingsCard}>
