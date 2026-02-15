@@ -158,6 +158,15 @@ All-in-one health companion app for researching, calculating dosages, tracking u
   - [x] Updated .gitignore for security (env files, service account keys)
   - [x] In-app Privacy Policy screen (privacy-policy.tsx)
   - [x] Profile screen: Delete Account button, Legal section links
+- [x] **App Icons Updated** (Feb 15, 2026)
+  - [x] icon.png (512x512) with DNA helix + "P" design
+  - [x] adaptive-icon.png (512x512) matching
+- [x] **App Store Screenshots** (Feb 15, 2026)
+  - [x] 7 native mobile screenshots saved to /app/frontend/assets/screenshots/
+- [x] **Calculator Enhancements** (Feb 15, 2026)
+  - [x] Save as Preset functionality (existing - enhanced with delete on long-press)
+  - [x] Add to Schedule button - creates recurring item from calculator
+  - [x] Schedule modal with frequency, days, and time selection
 
 ---
 
