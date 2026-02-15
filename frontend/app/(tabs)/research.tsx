@@ -14,12 +14,27 @@ type AddType = 'peptide' | 'medication' | null;
 
 const ROUTE_OPTIONS = ['Subcutaneous', 'Intramuscular', 'Oral', 'Nasal', 'Topical', 'IV', 'Sublingual'];
 
+// Goal icons mapping for "Browse by Goal"
+const GOAL_ICONS: Record<string, string> = {
+  'Fat Loss': 'fire',
+  'Muscle Growth': 'dumbbell',
+  'Recovery': 'heart-pulse',
+  'Anti-Aging': 'clock-time-eight-outline',
+  'Cognitive': 'brain',
+  'Sleep': 'sleep',
+  'Skin/Hair': 'face-woman-shimmer',
+  'Immune': 'shield-plus',
+  'Sexual Health': 'heart',
+  'Other': 'dots-horizontal-circle',
+};
+
 export default function ResearchScreen() {
   const { colors } = useTheme();
   const router = useRouter();
   const [search, setSearch] = useState('');
   const [activeTab, setActiveTab] = useState<Tab>('peptides');
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
+  const [showGoalFilter, setShowGoalFilter] = useState(false);
   const [customPeptides, setCustomPeptides] = useState<Peptide[]>([]);
   const [customMeds, setCustomMeds] = useState<Medication[]>([]);
   const [showAdd, setShowAdd] = useState<AddType>(null);
