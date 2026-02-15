@@ -171,6 +171,7 @@ export default function JournalScreen() {
                     {entry.sleep_quality && <Text style={styles.entryMetric}>😴 Sleep: {entry.sleep_quality}/10</Text>}
                     {entry.sleep_hours && <Text style={styles.entryMetric}>🕐 {entry.sleep_hours}h sleep</Text>}
                     {entry.mood && <Text style={styles.entryMetric}>{MOODS.find(m => m.value === entry.mood)?.emoji} {entry.mood}</Text>}
+                    {entry.gym_activity && <Text style={styles.entryMetric}>💪 {WORKOUT_TYPES.find(w => w.value === entry.gym_activity?.type)?.label || entry.gym_activity.type}: {entry.gym_activity.duration_mins}min</Text>}
                   </View>
                   {entry.notes && <Text style={styles.entryNotes}>{entry.notes}</Text>}
                 </View>
