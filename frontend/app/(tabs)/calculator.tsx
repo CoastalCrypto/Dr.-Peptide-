@@ -25,6 +25,7 @@ const DOSE_OPTIONS = [
 interface Preset {
   id: string;
   name: string;
+  peptideName?: string;
   syringeIdx: number;
   vialMg: number;
   bacWaterMl: number;
