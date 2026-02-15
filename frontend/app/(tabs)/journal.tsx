@@ -358,12 +358,6 @@ export default function JournalScreen() {
                   />
                 )}
               </>
-                    chartColor={colors.accent}
-                    chartType="bar"
-                    unit="mins"
-                  />
-                )}
-              </>
             ) : (
               // Fallback simple bar charts (web)
               <>
