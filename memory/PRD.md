@@ -145,6 +145,19 @@ All-in-one health companion app for researching, calculating dosages, tracking u
   - [x] Dose logging (Taken/Skipped/Delayed)
   - [x] Backend CRUD endpoints
   - [x] Schedule calculation for all recurrence types
+- [x] **App Store Deployment Infrastructure** (Feb 15, 2026)
+  - [x] Applied user patch (peptrack-all-fixes.patch) with deployment configs
+  - [x] Google Play publishing infrastructure (Dockerfile, Procfile, railway.json, render.yaml)
+  - [x] Legal pages: privacy-policy.html, terms-of-service.html, index.html (in /docs)
+  - [x] Backend configs: Dockerfile, Procfile, railway.json, render.yaml
+  - [x] Environment templates: backend/.env.example, frontend/.env.example
+  - [x] PLAY_CONSOLE_CHEATSHEET.md with form answers
+  - [x] PUBLISHING_GUIDE.md with step-by-step instructions
+  - [x] validate-publish.js script for pre-publish checks
+  - [x] setup-and-publish.sh automation script
+  - [x] Updated .gitignore for security (env files, service account keys)
+  - [x] In-app Privacy Policy screen (privacy-policy.tsx)
+  - [x] Profile screen: Delete Account button, Legal section links
 
 ---
 
