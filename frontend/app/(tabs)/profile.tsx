@@ -10,6 +10,7 @@ import { useRouter } from 'expo-router';
 import { Platform } from 'react-native';
 import { NotificationService } from '../../src/services/notifications';
 import { AppLockService } from '../../src/services/appLock';
+import { VendorManagement } from '../../src/components/VendorManagement';
 
 interface Settings {
   weightUnit: string;
