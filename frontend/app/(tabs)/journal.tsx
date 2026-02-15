@@ -305,10 +305,87 @@ export default function JournalScreen() {
         ) : (
           <>
             <Text style={styles.sectionTitle}>7-Day Trends</Text>
-            {weightData.some(v => v > 0) && <MiniBarChart data={weightData} max={Math.max(...weightData) * 1.1} label="Weight (lbs)" colors={colors} />}
-            {energyData.some(v => v > 0) && <MiniBarChart data={energyData} max={10} label="Energy Level" colors={colors} />}
-            {gymData.some(v => v > 0) && <MiniBarChart data={gymData} max={Math.max(...gymData, 60)} label="Gym Activity (mins)" colors={colors} />}
-            {!weightData.some(v => v > 0) && !energyData.some(v => v > 0) && !gymData.some(v => v > 0) && (
+            
+            {useVictoryCharts ? (
+              // Victory Native Charts (native platforms)
+              <>
+                {hasWeightData && (
+                  <VictoryTrendChart
+                    data={chartEntries.map(e => ({ day: e.day, dayLabel: e.dayLabel, value: e.weight }))}
+                    label="Weight"
+                    yKey="value"
+                    colors={colors}
+                    chartColor="#FF6B6B"
+                    chartType="line"
+                    unit="lbs"
+                  />
+                )}
+                {hasEnergyData && (
+                  <VictoryTrendChart
+                    data={chartEntries.map(e => ({ day: e.day, dayLabel: e.dayLabel, value: e.energy }))}
+                    label="Energy Level"
+                    yKey="value"
+                    colors={colors}
+                    chartColor="#FFD166"
+                    chartType="bar"
+                    unit="/10"
+                  />
+                )}
+                {hasSleepData && (
+                  <VictoryTrendChart
+                    data={chartEntries.map(e => ({ day: e.day, dayLabel: e.dayLabel, value: e.sleep }))}
+                    label="Sleep Quality"
+                    yKey="value"
+                    colors={colors}
+                    chartColor="#6C63FF"
+                    chartType="bar"
+                    unit="/10"
+                  />
+                )}
+                {hasSleepHoursData && (
+                  <VictoryTrendChart
+                    data={chartEntries.map(e => ({ day: e.day, dayLabel: e.dayLabel, value: e.sleepHours }))}
+                    label="Sleep Duration"
+                    yKey="value"
+                    colors={colors}
+                    chartColor="#4ECDC4"
+                    chartType="line"
+                    unit="hrs"
+                  />
+                )}
+                {hasMoodData && (
+                  <VictoryTrendChart
+                    data={chartEntries.map(e => ({ day: e.day, dayLabel: e.dayLabel, value: e.mood }))}
+                    label="Mood"
+                    yKey="value"
+                    colors={colors}
+                    chartColor="#06D6A0"
+                    chartType="bar"
+                    unit="/5"
+                  />
+                )}
+                {hasGymData && (
+                  <VictoryTrendChart
+                    data={chartEntries.map(e => ({ day: e.day, dayLabel: e.dayLabel, value: e.gym }))}
+                    label="Gym Activity"
+                    yKey="value"
+                    colors={colors}
+                    chartColor={colors.accent}
+                    chartType="bar"
+                    unit="mins"
+                  />
+                )}
+              </>
+            ) : (
+              // Fallback simple bar charts (web)
+              <>
+                {weightDataSimple.some(v => v > 0) && <MiniBarChart data={weightDataSimple} max={Math.max(...weightDataSimple) * 1.1} label="Weight (lbs)" colors={colors} />}
+                {energyDataSimple.some(v => v > 0) && <MiniBarChart data={energyDataSimple} max={10} label="Energy Level" colors={colors} />}
+                {gymDataSimple.some(v => v > 0) && <MiniBarChart data={gymDataSimple} max={Math.max(...gymDataSimple, 60)} label="Gym Activity (mins)" colors={colors} />}
+              </>
+            )}
+            
+            {!hasAnyData && (
               <View style={styles.emptyCard}>
                 <MaterialCommunityIcons name="chart-line" size={48} color={colors.textTertiary} />
                 <Text style={styles.emptyText}>Not enough data for trends</Text>
