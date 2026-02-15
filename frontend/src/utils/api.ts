@@ -1,43 +1,35 @@
 import { RecurringItem, RecurringDoseLog, DoseStatus } from '../types/recurring';
 
-const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL;
+const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL || '';
+
+async function apiRequest(endpoint: string, options?: RequestInit) {
+  if (!BACKEND_URL) {
+    throw new Error('Backend URL not configured. Set EXPO_PUBLIC_BACKEND_URL.');
+  }
+  const res = await fetch(`${BACKEND_URL}${endpoint}`, {
+    ...options,
+    credentials: 'include',
+  });
+  if (!res.ok) throw new Error(`API ${res.status}`);
+  return res.json();
+}
 
 export const api = {
-  get: async (endpoint: string) => {
-    const res = await fetch(`${BACKEND_URL}${endpoint}`, {
-      credentials: 'include',
-    });
-    if (!res.ok) throw new Error(`API ${res.status}`);
-    return res.json();
-  },
-  post: async (endpoint: string, body: any) => {
-    const res = await fetch(`${BACKEND_URL}${endpoint}`, {
+  get: (endpoint: string) => apiRequest(endpoint),
+  post: (endpoint: string, body: any) =>
+    apiRequest(endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
       body: JSON.stringify(body),
-    });
-    if (!res.ok) throw new Error(`API ${res.status}`);
-    return res.json();
-  },
-  put: async (endpoint: string, body: any) => {
-    const res = await fetch(`${BACKEND_URL}${endpoint}`, {
+    }),
+  put: (endpoint: string, body: any) =>
+    apiRequest(endpoint, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
       body: JSON.stringify(body),
-    });
-    if (!res.ok) throw new Error(`API ${res.status}`);
-    return res.json();
-  },
-  delete: async (endpoint: string) => {
-    const res = await fetch(`${BACKEND_URL}${endpoint}`, {
-      method: 'DELETE',
-      credentials: 'include',
-    });
-    if (!res.ok) throw new Error(`API ${res.status}`);
-    return res.json();
-  },
+    }),
+  delete: (endpoint: string) =>
+    apiRequest(endpoint, { method: 'DELETE' }),
 };
 
 // Recurring Items API
