@@ -293,16 +293,46 @@ export default function ResearchScreen() {
         </View>
 
         {activeTab === 'peptides' && (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.catRow}>
-            <TouchableOpacity style={[styles.catChip, !activeCategory && styles.catChipActive]} onPress={() => setActiveCategory(null)}>
-              <Text style={[styles.catChipText, !activeCategory && styles.catChipTextActive]}>All</Text>
+          <>
+            {/* Browse by Goal Toggle */}
+            <TouchableOpacity 
+              testID="browse-by-goal-toggle"
+              style={[styles.goalToggleBtn, activeCategory && styles.goalToggleActive]}
+              onPress={() => setShowGoalFilter(!showGoalFilter)}
+            >
+              <MaterialCommunityIcons name="target" size={18} color={activeCategory ? colors.primaryForeground : colors.accent} />
+              <Text style={[styles.goalToggleText, activeCategory && styles.goalToggleTextActive]}>
+                {activeCategory ? `Goal: ${activeCategory}` : 'Browse by Goal'}
+              </Text>
+              <MaterialCommunityIcons name={showGoalFilter ? 'chevron-up' : 'chevron-down'} size={18} color={activeCategory ? colors.primaryForeground : colors.textTertiary} />
             </TouchableOpacity>
-            {GOAL_CATEGORIES.map(cat => (
-              <TouchableOpacity key={cat} style={[styles.catChip, activeCategory === cat && styles.catChipActive]} onPress={() => setActiveCategory(activeCategory === cat ? null : cat)}>
-                <Text style={[styles.catChipText, activeCategory === cat && styles.catChipTextActive]}>{cat}</Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
+            
+            {showGoalFilter && (
+              <View style={styles.goalGrid}>
+                <TouchableOpacity 
+                  style={[styles.goalChip, !activeCategory && styles.goalChipActive]} 
+                  onPress={() => { setActiveCategory(null); setShowGoalFilter(false); }}
+                >
+                  <MaterialCommunityIcons name="view-grid" size={20} color={!activeCategory ? colors.primaryForeground : colors.textSecondary} />
+                  <Text style={[styles.goalChipText, !activeCategory && styles.goalChipTextActive]}>All</Text>
+                </TouchableOpacity>
+                {GOAL_CATEGORIES.map(cat => (
+                  <TouchableOpacity 
+                    key={cat} 
+                    style={[styles.goalChip, activeCategory === cat && styles.goalChipActive]} 
+                    onPress={() => { setActiveCategory(activeCategory === cat ? null : cat); setShowGoalFilter(false); }}
+                  >
+                    <MaterialCommunityIcons 
+                      name={(GOAL_ICONS[cat] || 'help-circle') as any} 
+                      size={20} 
+                      color={activeCategory === cat ? colors.primaryForeground : colors.textSecondary} 
+                    />
+                    <Text style={[styles.goalChipText, activeCategory === cat && styles.goalChipTextActive]}>{cat}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+          </>
         )}
 
         {activeTab === 'peptides' ? (
