@@ -188,6 +188,18 @@ All-in-one health companion app for researching, calculating dosages, tracking u
 ---
 
 ## Completed Tasks (Feb 15, 2026 - Continued)
+- [x] **Vendor Management Feature** (Feb 15, 2026)
+  - [x] Backend: Vendor model with name, website, email, phone, rating, payment_methods, is_domestic, avg_shipping_days
+  - [x] Backend: Order model with vendor_id, order_number, items, total_amount, currency, status, tracking_number, tracking_url, expected_delivery
+  - [x] Backend: Full CRUD endpoints for /api/vendors and /api/orders
+  - [x] Backend: GET /api/vendors/{vendor_id}/orders to get all orders for a vendor
+  - [x] Frontend: VendorManagement component with tabbed interface (Vendors | Orders)
+  - [x] Frontend: Vendor cards with rating stars, payment badges, location, shipping days, order count
+  - [x] Frontend: Order cards with status indicators (pending/shipped/delivered/cancelled), tracking info, items
+  - [x] Frontend: Add/Edit Vendor form with all fields including payment method multi-select
+  - [x] Frontend: Add/Edit Order form with vendor picker, status selector, tracking fields
+  - [x] Frontend: Vendor detail modal with order history and quick-add order button
+  - [x] Testing: 100% backend (19/19 tests), 100% frontend pass rate
 - [x] **Journal Logging UI Enhancement**
   - [x] Added Gym Activity tracking with 8 workout types (Weights, Cardio, Yoga, Cycling, Swimming, Sports, Walking, Other)
   - [x] Duration (mins) input for workouts
