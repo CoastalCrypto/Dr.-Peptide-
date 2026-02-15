@@ -132,7 +132,7 @@ export default function JournalScreen() {
 
         {tab === 'log' ? (
           <>
-            <TouchableOpacity testID="log-today-btn" style={styles.logBtn} onPress={() => { if (todayEntry) { setWeight(todayEntry.weight?.toString() || ''); setEnergy(todayEntry.energy_level || 0); setSleepQuality(todayEntry.sleep_quality || 0); setSleepHours(todayEntry.sleep_hours?.toString() || ''); setMood(todayEntry.mood || ''); setNotes(todayEntry.notes || ''); } setShowLog(true); }}>
+            <TouchableOpacity testID="log-today-btn" style={styles.logBtn} onPress={() => { if (todayEntry) { setWeight(todayEntry.weight?.toString() || ''); setEnergy(todayEntry.energy_level || 0); setSleepQuality(todayEntry.sleep_quality || 0); setSleepHours(todayEntry.sleep_hours?.toString() || ''); setMood(todayEntry.mood || ''); setGymType(todayEntry.gym_activity?.type || ''); setGymDuration(todayEntry.gym_activity?.duration_mins?.toString() || ''); setGymIntensity(todayEntry.gym_activity?.intensity || 0); setNotes(todayEntry.notes || ''); } setShowLog(true); }}>
               <MaterialCommunityIcons name="plus-circle" size={24} color={colors.primaryForeground} />
               <Text style={styles.logBtnText}>{todayEntry ? 'Update Today\'s Entry' : 'Log Today'}</Text>
             </TouchableOpacity>
