@@ -10,19 +10,30 @@ export default function TabLayout() {
 
   // Inject CSS to hide tab bar on web
   useEffect(() => {
-    if (Platform.OS === 'web') {
+    if (Platform.OS === 'web' && typeof window !== 'undefined' && typeof document !== 'undefined') {
       const style = document.createElement('style');
+      style.id = 'hide-tabbar-style';
       style.textContent = `
-        [role="tablist"] {
+        [role="tablist"], 
+        nav[role="tablist"],
+        div[role="tablist"] {
           display: none !important;
           height: 0 !important;
+          max-height: 0 !important;
           overflow: hidden !important;
           visibility: hidden !important;
+          opacity: 0 !important;
+          pointer-events: none !important;
         }
       `;
-      document.head.appendChild(style);
+      if (!document.getElementById('hide-tabbar-style')) {
+        document.head.appendChild(style);
+      }
       return () => {
-        document.head.removeChild(style);
+        const existingStyle = document.getElementById('hide-tabbar-style');
+        if (existingStyle) {
+          document.head.removeChild(existingStyle);
+        }
       };
     }
   }, []);
