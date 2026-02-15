@@ -75,10 +75,10 @@ export const NotificationService = {
     
     for (const weekday of days) {
       const trigger: Notifications.WeeklyTriggerInput = {
+        type: Notifications.SchedulableTriggerInputTypes.WEEKLY,
         weekday: weekday + 1, // expo-notifications uses 1-7 (Sun=1)
         hour,
         minute,
-        repeats: true,
       };
       
       const id = await NotificationService.scheduleNotification(
