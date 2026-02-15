@@ -110,10 +110,32 @@ export function AddRecurringItemModal({ visible, onClose, onSuccess, editItem }:
         reminder_enabled: reminderEnabled,
       };
       
+      let savedItem;
       if (editItem) {
-        await recurringItemsApi.update(editItem.item_id, itemData);
+        savedItem = await recurringItemsApi.update(editItem.item_id, itemData);
+        // Cancel existing notifications for this item before scheduling new ones
+        if (editItem.item_id) {
+          await NotificationServiceV2.cancelDoseReminders(editItem.item_id);
+        }
       } else {
-        await recurringItemsApi.create(itemData);
+        savedItem = await recurringItemsApi.create(itemData);
+      }
+      
+      // Schedule dose reminders if enabled and we have an item_id
+      const itemId = savedItem?.item_id || editItem?.item_id;
+      if (reminderEnabled && itemId) {
+        // Get the days to schedule based on recurrence type
+        let scheduleDays = [0, 1, 2, 3, 4, 5, 6]; // All days for daily
+        if (recurrenceType === 'weekly' || recurrenceType === 'biweekly') {
+          scheduleDays = recurrenceDays;
+        }
+        
+        await NotificationServiceV2.scheduleDoseReminder(
+          itemId,
+          name.trim(),
+          times,
+          scheduleDays
+        );
       }
       
       resetForm();
