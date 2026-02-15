@@ -440,7 +440,7 @@ export default function CalculatorScreen() {
 const createStyles = (colors: any) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background },
   container: { flex: 1 },
-  content: { padding: spacing.lg, paddingBottom: 180, flexGrow: 1 },
+  content: { padding: spacing.lg, paddingBottom: 180, ...(Platform.OS === 'web' ? { minHeight: '100%' } : {}) },
   title: { ...typography.h1, color: colors.textPrimary, marginBottom: spacing.md },
   presetsRow: { marginBottom: spacing.md, flexGrow: 0 },
   presetChip: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, marginRight: 8, gap: 6, borderWidth: 1, borderColor: colors.border },
