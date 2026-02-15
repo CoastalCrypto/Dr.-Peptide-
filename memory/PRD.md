@@ -251,9 +251,15 @@ All-in-one health companion app for researching, calculating dosages, tracking u
 
 ---
 
+## Completed Tasks (Feb 15, 2026 - Latest Session)
+- [x] **Patch Verification** - User-applied patch verified stable (publishing infrastructure, bug fixes)
+- [x] **Local Push Notifications Integration** - Dose reminders now auto-schedule when creating recurring items
+  - Connected AddRecurringItemModal to NotificationServiceV2
+  - Schedules weekly notifications based on recurrence type and selected days
+  - Supports dose reminders, daily journal reminders, weekly summary notifications
+
 ## Upcoming Tasks
-- [ ] Integrate OpenFDA API into Research tab Medications section (frontend)
-- [ ] Push notifications actual scheduling on mobile (scaffolding exists)
+- [ ] Integrate OpenFDA API into Research tab Medications section (frontend UI)
 
 ---
 
