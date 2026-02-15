@@ -24,25 +24,28 @@ export function NavigationHeader() {
   const { colors } = useTheme();
   const router = useRouter();
   const pathname = usePathname();
+  const segments = useSegments();
   const insets = useSafeAreaInsets();
   const [menuOpen, setMenuOpen] = useState(false);
 
-  // Get current page name
+  // Get current page name using segments (more reliable than pathname)
   const getCurrentPageName = () => {
-    if (pathname === '/' || pathname === '/(tabs)' || pathname === '/(tabs)/index' || pathname.endsWith('/index')) return 'Home';
-    if (pathname.includes('/calculator')) return 'Calculator';
-    if (pathname.includes('/research')) return 'Research';
-    if (pathname.includes('/journal')) return 'Journal';
-    if (pathname.includes('/profile')) return 'Profile';
+    const lastSegment = segments[segments.length - 1];
+    if (!lastSegment || lastSegment === '(tabs)' || lastSegment === 'index') return 'Home';
+    if (lastSegment === 'calculator') return 'Calculator';
+    if (lastSegment === 'research') return 'Research';
+    if (lastSegment === 'journal') return 'Journal';
+    if (lastSegment === 'profile') return 'Profile';
     return 'Home';
   };
 
   const getCurrentEmoji = () => {
-    if (pathname === '/' || pathname === '/(tabs)' || pathname === '/(tabs)/index' || pathname.endsWith('/index')) return '🏋️';
-    if (pathname.includes('/calculator')) return '🧮';
-    if (pathname.includes('/research')) return '🔬';
-    if (pathname.includes('/journal')) return '📓';
-    if (pathname.includes('/profile')) return '⚙️';
+    const lastSegment = segments[segments.length - 1];
+    if (!lastSegment || lastSegment === '(tabs)' || lastSegment === 'index') return '🏋️';
+    if (lastSegment === 'calculator') return '🧮';
+    if (lastSegment === 'research') return '🔬';
+    if (lastSegment === 'journal') return '📓';
+    if (lastSegment === 'profile') return '⚙️';
     return '🏋️';
   };
 
