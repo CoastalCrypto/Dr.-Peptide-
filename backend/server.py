@@ -560,6 +560,58 @@ class CustomMedicationCreate(BaseModel):
     interactions: List[str] = []
     timing: str = ""
 
+# ==================== Vendor Management Models ====================
+
+class VendorCreate(BaseModel):
+    name: str
+    website: Optional[str] = None
+    email: Optional[str] = None
+    phone: Optional[str] = None
+    payment_methods: List[str] = []  # crypto, card, wire, etc.
+    notes: Optional[str] = None
+    rating: Optional[int] = None  # 1-5 stars
+    is_domestic: bool = True
+    ships_to: List[str] = []  # countries
+    avg_shipping_days: Optional[int] = None
+
+class VendorUpdate(BaseModel):
+    name: Optional[str] = None
+    website: Optional[str] = None
+    email: Optional[str] = None
+    phone: Optional[str] = None
+    payment_methods: Optional[List[str]] = None
+    notes: Optional[str] = None
+    rating: Optional[int] = None
+    is_domestic: Optional[bool] = None
+    ships_to: Optional[List[str]] = None
+    avg_shipping_days: Optional[int] = None
+
+class OrderCreate(BaseModel):
+    vendor_id: str
+    order_number: Optional[str] = None
+    order_date: str  # ISO date YYYY-MM-DD
+    items: List[str] = []  # List of item names/descriptions
+    total_amount: Optional[float] = None
+    currency: str = "USD"
+    status: str = "pending"  # pending, shipped, delivered, cancelled
+    tracking_number: Optional[str] = None
+    tracking_url: Optional[str] = None
+    expected_delivery: Optional[str] = None  # ISO date
+    actual_delivery: Optional[str] = None  # ISO date
+    notes: Optional[str] = None
+
+class OrderUpdate(BaseModel):
+    order_number: Optional[str] = None
+    items: Optional[List[str]] = None
+    total_amount: Optional[float] = None
+    currency: Optional[str] = None
+    status: Optional[str] = None
+    tracking_number: Optional[str] = None
+    tracking_url: Optional[str] = None
+    expected_delivery: Optional[str] = None
+    actual_delivery: Optional[str] = None
+    notes: Optional[str] = None
+
 @api_router.post("/custom/peptides")
 async def create_custom_peptide(peptide: CustomPeptideCreate):
     doc = peptide.dict()
