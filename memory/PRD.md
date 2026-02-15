@@ -6,8 +6,10 @@ All-in-one health companion app for researching, calculating dosages, tracking u
 ## Tech Stack
 - **Frontend**: Expo (SDK 54) with React Native, expo-router (file-based routing), AsyncStorage (offline-first)
 - **Backend**: FastAPI + MongoDB (Motor async driver)
-- **AI**: GPT-5.2 via Emergent LLM key (health summaries, peptide Q&A, web search)
+- **AI**: Gemini 3 Flash via Emergent LLM key (health summaries, peptide Q&A, web search)
 - **Auth**: Emergent Google Auth (optional, guest mode default)
+- **Charts**: Victory Native v41 with @shopify/react-native-skia
+- **Security**: expo-local-authentication (biometrics), expo-secure-store (PIN)
 
 ---
 
@@ -19,10 +21,10 @@ All-in-one health companion app for researching, calculating dosages, tracking u
 - "Continue as Guest" (default) / Google Auth (optional)
 - Goals: Weight Loss, Recovery, Anti-Aging, Muscle Growth, General Health, Medication Management
 
-### 2. Home Dashboard (Tab 1) — **ENHANCED WITH RECURRING ITEMS**
+### 2. Home Dashboard (Tab 1) — **WITH RECURRING ITEMS & INJECTION TRACKER**
 - Greeting with current date
 - **Adherence ring** (SVG circular progress showing % of doses taken)
-- **Calendar Component** (NEW):
+- **Calendar Component**:
   - Week view: 7-day horizontal layout with date selection
   - Month view: Full calendar grid with navigation
   - Toggle between Week/Month views
@@ -39,8 +41,18 @@ All-in-one health companion app for researching, calculating dosages, tracking u
   - Delayed: With timestamp
 - **My Recurring Items** horizontal scroll section
 - FAB and Add button to create new recurring items
+- **Injection Site Tracker** button - opens full tracking modal
 
-### 3. Recurring Items System (NEW - Feb 2026)
+### 3. Injection Site Rotation Tracker (VERIFIED WORKING - Feb 15, 2026)
+- Modal accessible from Home screen via button
+- 10 injection sites: Abdomen (L/R), Thighs (L/R outer, L/R front), Arms (L/R), Glutes (L/R)
+- Recommended next site algorithm (alternates left/right, respects 3-day rest)
+- Site status colors: Green (available), Yellow (resting), Red (recent)
+- Logging injection updates site history
+- Last used date display per site
+- Legend explaining status indicators
+
+### 4. Recurring Items System
 **Full recurrence scheduling with:**
 - **Recurrence Types**: Daily, Weekly, Bi-weekly, Monthly, Custom (every X days)
 - **Weekly/Bi-weekly**: Day-of-week selector (Sun-Sat)
@@ -49,7 +61,7 @@ All-in-one health companion app for researching, calculating dosages, tracking u
 - **Advanced Options**: Notes, Reminder toggle
 - **Form Fields**: Name, Dosage, Unit (mcg/mg/mL/IU/tablets/capsules), Route (Subcutaneous/Oral/Intramuscular/Nasal/Topical/Sublingual)
 
-### 4. Peptide Reconstitution Calculator (Tab 2) — Flagship Feature
+### 5. Peptide Reconstitution Calculator (Tab 2) — Flagship Feature
 - Syringe size selector (0.3/0.5/1.0 mL + custom)
 - Vial amount selector (1-50 mg + custom)
 - BAC water selector (0.5-5.0 mL + custom)
@@ -58,29 +70,70 @@ All-in-one health companion app for researching, calculating dosages, tracking u
 - Animated syringe visual (Reanimated fill)
 - Warning banner when dose exceeds syringe capacity
 - Save/load presets (AsyncStorage)
+- **Add to Schedule** button - creates recurring item from calculator
 
-### 5. Research Database (Tab 3)
+### 6. Research Database (Tab 3) — **WITH COMPARISON TOOL & AI SEARCH**
 - **29 peptide profiles** covering all categories
 - **20 medication profiles**
 - **Custom Entry System**: Users can add their own peptides and medications
-- **AI Web Search** (NEW): Search for detailed peptide/medication information using GPT-5.2
+- **AI Web Search** (VERIFIED WORKING): Search for detailed peptide/medication information using Gemini 3 Flash
+- **Peptide Comparison Tool** (VERIFIED WORKING - Feb 15, 2026):
+  - Compare mode toggle button
+  - Select 2-3 peptides via checkboxes
+  - Comparison modal showing: Goals, Routes, Frequency, Dosage, Cycle, Description
+  - Side-by-side attribute comparison
 - Searchable + filterable by category
 - Detail page with dosage ranges, side effects, protocols, storage
 - "Quick Calculate" and "Add to Tracker" actions
 
-### 6. Health Journal (Tab 4)
-- Log: Weight, Energy (1-10), Sleep quality/hours, Mood (5 emojis), Notes
+### 7. Health Journal (Tab 4) — **WITH VICTORY NATIVE CHARTS**
+- Log: Weight, Energy (1-10), Sleep quality/hours, Mood (5 emojis), Gym Activity, Notes
+- **Gym Activity tracking** (8 workout types): Weights, Cardio, Yoga, Cycling, Swimming, Sports, Walking, Other
+  - Duration (mins) input
+  - Intensity scale (1-10)
 - Recent entries timeline
-- 7-day trend bar charts
+- **7-Day Trend Charts** (IMPLEMENTED - Feb 15, 2026):
+  - Victory Native charts for native platforms
+  - Weight trend (line chart)
+  - Energy level (bar chart)
+  - Sleep quality (bar chart)
+  - Sleep duration (line chart)
+  - Mood (bar chart)
+  - Gym activity (bar chart)
+  - Fallback MiniBarChart for web preview
 - Weight delta tracking
 
-### 7. Profile & Settings (Tab 5)
+### 8. Profile & Settings (Tab 5)
 - Guest user display / Google Auth sign-in
-- **Light/Dark Mode Toggle** (NEW)
+- **Light/Dark Mode Toggle**
 - Weight unit (lbs/kg) and measurement unit (in/cm) toggles
 - Notifications toggle
+- **Vendor Management** - Full CRUD for vendors and orders
 - Data export and clear functionality
+- Delete Account button
 - Medical disclaimer
+- Privacy Policy and Terms of Service links
+
+### 9. App Security (VERIFIED WORKING - Feb 15, 2026)
+- **Biometric Authentication** (Face ID / Touch ID / Fingerprint)
+  - Toggle in Profile > Security section
+  - Uses expo-local-authentication
+  - Only available on supported devices
+- **PIN Lock**
+  - 4-6 digit PIN setup
+  - PIN stored securely via expo-secure-store
+  - Set/Remove PIN functionality
+  - PIN verification on app launch (when enabled)
+
+### 10. Vendor Management (VERIFIED WORKING - Feb 15, 2026)
+- **Vendors Tab**:
+  - Add/Edit vendors with: name, website, email, phone, rating (1-5 stars), payment methods, domestic/international, avg shipping days, notes
+  - Vendor cards with all details displayed
+  - Order count per vendor
+- **Orders Tab**:
+  - Add/Edit orders with: vendor, order number, date, items, amount, currency, status, tracking number/URL, expected/actual delivery, notes
+  - Order status indicators (pending/shipped/delivered/cancelled)
+  - Items list display
 
 ---
 
@@ -91,13 +144,14 @@ All-in-one health companion app for researching, calculating dosages, tracking u
 - `POST /api/auth/session` — Google Auth session exchange
 - `GET /api/auth/me` — Current user
 - `POST /api/auth/logout` — Logout
+- `DELETE /api/auth/delete-account` — Delete account and all data
 
 ### AI APIs
 - `POST /api/ai/ask` — AI peptide Q&A (GPT-5.2)
-- `POST /api/ai/summary` — AI health summary
-- `POST /api/ai/web-search` — AI-powered research search (NEW)
+- `POST /api/ai/summary` — AI health summary (Gemini 3 Flash)
+- `POST /api/ai/web-search` — AI-powered research search (Gemini 3 Flash)
 
-### Recurring Items APIs (NEW)
+### Recurring Items APIs
 - `POST /api/recurring-items` — Create recurring item
 - `GET /api/recurring-items` — List all active recurring items
 - `GET /api/recurring-items/{item_id}` — Get single item
@@ -107,14 +161,14 @@ All-in-one health companion app for researching, calculating dosages, tracking u
 - `POST /api/recurring-items/dose-log` — Log a dose (upsert)
 - `GET /api/recurring-items/dose-logs/{date}` — Get logs for date
 
-### Vendor Management APIs (NEW - Feb 15, 2026)
-- `POST /api/vendors` — Create vendor with name, website, email, phone, rating, payment_methods, is_domestic, avg_shipping_days
+### Vendor Management APIs
+- `POST /api/vendors` — Create vendor
 - `GET /api/vendors` — List all active vendors
 - `GET /api/vendors/{vendor_id}` — Get single vendor
 - `PUT /api/vendors/{vendor_id}` — Update vendor
-- `DELETE /api/vendors/{vendor_id}` — Soft delete (mark inactive)
+- `DELETE /api/vendors/{vendor_id}` — Soft delete
 - `GET /api/vendors/{vendor_id}/orders` — Get all orders for a vendor
-- `POST /api/orders` — Create order with vendor_id, items, total_amount, status, tracking
+- `POST /api/orders` — Create order
 - `GET /api/orders` — List orders (filter by vendor_id, status)
 - `GET /api/orders/{order_id}` — Get single order
 - `PUT /api/orders/{order_id}` — Update order
@@ -147,108 +201,80 @@ All-in-one health companion app for researching, calculating dosages, tracking u
 
 ---
 
-## Completed Tasks (Feb 2026)
+## Completed Tasks (Feb 15, 2026)
 - [x] Full app redesign ("grungy gym" theme)
 - [x] Legal waiver implementation
 - [x] Light/Dark mode system with ThemeContext
-- [x] AI Web Search integration
-- [x] **Recurring Items feature with calendar** (Feb 14, 2026)
-  - [x] ScheduleCalendar component (week/month views)
-  - [x] AddRecurringItemModal with full form
-  - [x] Dose logging (Taken/Skipped/Delayed)
-  - [x] Backend CRUD endpoints
-  - [x] Schedule calculation for all recurrence types
-- [x] **App Store Deployment Infrastructure** (Feb 15, 2026)
-  - [x] Applied user patch (peptrack-all-fixes.patch) with deployment configs
-  - [x] Google Play publishing infrastructure (Dockerfile, Procfile, railway.json, render.yaml)
-  - [x] Legal pages: privacy-policy.html, terms-of-service.html, index.html (in /docs)
-  - [x] Backend configs: Dockerfile, Procfile, railway.json, render.yaml
-  - [x] Environment templates: backend/.env.example, frontend/.env.example
-  - [x] PLAY_CONSOLE_CHEATSHEET.md with form answers
-  - [x] PUBLISHING_GUIDE.md with step-by-step instructions
-  - [x] validate-publish.js script for pre-publish checks
-  - [x] setup-and-publish.sh automation script
-  - [x] Updated .gitignore for security (env files, service account keys)
-  - [x] In-app Privacy Policy screen (privacy-policy.tsx)
-  - [x] Profile screen: Delete Account button, Legal section links
-- [x] **App Icons Updated** (Feb 15, 2026)
-  - [x] icon.png (512x512) with DNA helix + "P" design
-  - [x] adaptive-icon.png (512x512) matching
-- [x] **App Store Screenshots** (Feb 15, 2026)
-  - [x] 7 native mobile screenshots saved to /app/frontend/assets/screenshots/
-- [x] **Calculator Enhancements** (Feb 15, 2026)
-  - [x] Save as Preset functionality (existing - enhanced with delete on long-press)
-  - [x] Add to Schedule button - creates recurring item from calculator
-  - [x] Schedule modal with frequency, days, and time selection
+- [x] AI Web Search integration (Gemini 3 Flash)
+- [x] Recurring Items feature with calendar
+- [x] App Store Deployment Infrastructure
+- [x] App Icons Updated
+- [x] App Store Screenshots (7 screenshots)
+- [x] Calculator Enhancements (presets, add to schedule)
+- [x] **Vendor Management Feature** - Full CRUD, tested 100%
+- [x] **Calculator Scroll Fix** - ScrollView scrolling on web
+- [x] **Journal Gym Activity** - 8 workout types with duration/intensity
+- [x] **Theme Persistence Fix for Web** - localStorage fallback
+- [x] **Injection Site Tracker** - VERIFIED WORKING
+- [x] **PIN/Biometric Security** - VERIFIED WORKING
+- [x] **Peptide Comparison Tool** - VERIFIED WORKING (bug fixed)
+- [x] **Victory Native Charts** - Implemented for Journal Trends
 
 ---
 
 ## Upcoming Tasks
-- [ ] Research: Full-text search, "Browse by Goal" filtering, Comparison Tool
-- [ ] Victory Native charts for Journal metrics (Weight, Energy, Gym Activity trends)
-- [ ] Push notifications for reminders
+- [ ] Complete Google Authentication for cloud sync
+- [ ] AI-powered weekly health summaries (backend logic)
+- [ ] Full-text search on local data in Research tab
+- [ ] "Browse by Goal" filtering in Research tab
 
 ---
 
 ## Future/Backlog
-- [ ] AI weekly health summaries
-- [ ] Cloud sync with Google Auth
-- [ ] Injection Site Rotation Tracker
+- [ ] Push notifications for reminders (expo-notifications installed)
 - [ ] Data export (CSV/PDF)
-- [ ] Biometric/PIN app lock
-- [ ] OpenFDA API integration
+- [ ] OpenFDA API integration for live medication data
+- [ ] Multi-device sync
 
 ---
 
-## Completed Tasks (Feb 15, 2026 - Continued)
-- [x] **Vendor Management Feature** (Feb 15, 2026)
-  - [x] Backend: Vendor model with name, website, email, phone, rating, payment_methods, is_domestic, avg_shipping_days
-  - [x] Backend: Order model with vendor_id, order_number, items, total_amount, currency, status, tracking_number, tracking_url, expected_delivery
-  - [x] Backend: Full CRUD endpoints for /api/vendors and /api/orders
-  - [x] Backend: GET /api/vendors/{vendor_id}/orders to get all orders for a vendor
-  - [x] Frontend: VendorManagement component with tabbed interface (Vendors | Orders)
-  - [x] Frontend: Vendor cards with rating stars, payment badges, location, shipping days, order count
-  - [x] Frontend: Order cards with status indicators (pending/shipped/delivered/cancelled), tracking info, items
-  - [x] Frontend: Add/Edit Vendor form with all fields including payment method multi-select
-  - [x] Frontend: Add/Edit Order form with vendor picker, status selector, tracking fields
-  - [x] Frontend: Vendor detail modal with order history and quick-add order button
-  - [x] Testing: 100% backend (19/19 tests), 100% frontend pass rate
-- [x] **Calculator Scroll Fix** (Feb 15, 2026)
-  - [x] Fixed ScrollView scrolling issue on web preview
-  - [x] Added proper paddingBottom (180px) to ensure buttons are visible
-  - [x] "Save as Preset" and "Add to Schedule" buttons now accessible
-  - [x] Testing: 100% frontend pass rate
-- [x] **Journal Logging UI Enhancement**
-  - [x] Added Gym Activity tracking with 8 workout types (Weights, Cardio, Yoga, Cycling, Swimming, Sports, Walking, Other)
-  - [x] Duration (mins) input for workouts
-  - [x] Intensity scale (1-10) for workouts
-  - [x] Gym Activity displayed in Recent Entries
-  - [x] Gym Activity mini bar chart in Trends tab
-- [x] **Theme Persistence Fix for Web**
-  - [x] Updated storage.ts to use localStorage on web platform
-  - [x] Theme preference now persists across page reloads on web preview
+## Testing Status (Feb 15, 2026)
+- **Iteration 7**: All 6 scaffolded features tested and verified working
+  - Injection Site Tracker: PASSED
+  - PIN/Biometric Security: PASSED
+  - Peptide Comparison Tool: PASSED
+  - AI Web Search: PASSED (API working)
+  - Vendor Management: PASSED
+  - Journal Trends Tab: PASSED
 
 ---
 
-## Deployment Status (Feb 15, 2026)
-- **Pre-publish validation**: All checks pass ✅
-- **Backend**: Healthy, MongoDB connected
-- **Frontend**: All screens functional
+## Preview URL
+https://health-companion-195.preview.emergentagent.com
 
-### GitHub Changes Applied (claude/prepare-app-store-deployment-BgZVN branch):
-- ✅ iOS privacy manifests and encryption declarations
-- ✅ POST_NOTIFICATIONS Android permission
-- ✅ iOS auto-increment buildNumber and appVersionSource
-- ✅ Apple Team ID in submit config
-- ✅ API client graceful failure when backend URL not configured
-- ✅ Dynamic version display using expo-constants
-- ✅ Delete Account button in Profile
-- ✅ Legal section (Privacy Policy, Terms of Service links)
-- ✅ Updated .gitignore for signing keys, keystores, build artifacts
+---
 
-### Remaining for App Store submission:
-  1. Create Expo account and run `eas init` to set projectId
-  2. Deploy backend to Railway/Render
-  3. Update `EXPO_PUBLIC_BACKEND_URL` in eas.json
-  4. Generate app screenshots
-  5. Run `eas build --platform android --profile production`
+## File Structure
+
+```
+/app
+├── backend/
+│   └── server.py             # FastAPI with all endpoints
+├── frontend/
+│   ├── app/
+│   │   ├── (tabs)/
+│   │   │   ├── index.tsx     # Home with Injection Tracker
+│   │   │   ├── calculator.tsx
+│   │   │   ├── research.tsx  # With Comparison Tool
+│   │   │   ├── journal.tsx   # With Victory Charts
+│   │   │   └── profile.tsx   # With Security & Vendor Management
+│   │   └── ...
+│   └── src/
+│       ├── components/
+│       │   ├── InjectionSiteTracker.tsx
+│       │   ├── VendorManagement.tsx
+│       │   └── ...
+│       └── services/
+│           ├── appLock.ts    # PIN/Biometric service
+│           └── notifications.ts
+```
