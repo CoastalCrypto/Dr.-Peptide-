@@ -28,6 +28,7 @@ export function NavigationHeader() {
   const segments = useSegments();
   const insets = useSafeAreaInsets();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [showVendorManagement, setShowVendorManagement] = useState(false);
 
   // Get current page name using segments (more reliable than pathname)
   const getCurrentPageName = () => {
