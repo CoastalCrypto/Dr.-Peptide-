@@ -202,9 +202,37 @@ export default function JournalScreen() {
 
   const resetForm = () => { setWeight(''); setEnergy(0); setSleepQuality(0); setSleepHours(''); setMood(''); setGymType(''); setGymDuration(''); setGymIntensity(0); setNotes(''); };
 
-  const weightData = entries.slice(0, 7).reverse().map(e => e.weight || 0);
-  const energyData = entries.slice(0, 7).reverse().map(e => e.energy_level || 0);
-  const gymData = entries.slice(0, 7).reverse().map(e => e.gym_activity?.duration_mins || 0);
+  // Prepare chart data for Victory Native
+  const chartEntries = useMemo(() => {
+    return entries.slice(0, 7).reverse().map((e, i) => {
+      const date = new Date(e.date + 'T12:00:00');
+      return {
+        day: String(i),
+        dayLabel: date.toLocaleDateString('en-US', { weekday: 'short' }).substring(0, 2),
+        weight: e.weight || 0,
+        energy: e.energy_level || 0,
+        sleep: e.sleep_quality || 0,
+        sleepHours: e.sleep_hours || 0,
+        mood: MOOD_VALUES[e.mood || ''] || 0,
+        gym: e.gym_activity?.duration_mins || 0,
+      };
+    });
+  }, [entries]);
+
+  const hasWeightData = chartEntries.some(d => d.weight > 0);
+  const hasEnergyData = chartEntries.some(d => d.energy > 0);
+  const hasSleepData = chartEntries.some(d => d.sleep > 0);
+  const hasSleepHoursData = chartEntries.some(d => d.sleepHours > 0);
+  const hasMoodData = chartEntries.some(d => d.mood > 0);
+  const hasGymData = chartEntries.some(d => d.gym > 0);
+  const hasAnyData = hasWeightData || hasEnergyData || hasSleepData || hasMoodData || hasGymData;
+
+  // Use fallback on web
+  const useVictoryCharts = Platform.OS !== 'web';
+  
+  const weightDataSimple = entries.slice(0, 7).reverse().map(e => e.weight || 0);
+  const energyDataSimple = entries.slice(0, 7).reverse().map(e => e.energy_level || 0);
+  const gymDataSimple = entries.slice(0, 7).reverse().map(e => e.gym_activity?.duration_mins || 0);
 
   const lastWeight = entries.find(e => e.weight)?.weight;
   const prevWeight = entries.filter(e => e.weight)[1]?.weight;
