@@ -30,15 +30,21 @@ export function NavigationHeader() {
 
   // Get current page name
   const getCurrentPageName = () => {
-    if (pathname === '/(tabs)' || pathname === '/(tabs)/index') return 'Home';
-    const item = NAV_ITEMS.find(i => pathname.includes(i.path.replace('/(tabs)', '')));
-    return item?.name || 'Home';
+    if (pathname === '/' || pathname === '/(tabs)' || pathname === '/(tabs)/index' || pathname.endsWith('/index')) return 'Home';
+    if (pathname.includes('/calculator')) return 'Calculator';
+    if (pathname.includes('/research')) return 'Research';
+    if (pathname.includes('/journal')) return 'Journal';
+    if (pathname.includes('/profile')) return 'Profile';
+    return 'Home';
   };
 
   const getCurrentEmoji = () => {
-    if (pathname === '/(tabs)' || pathname === '/(tabs)/index') return '🏋️';
-    const item = NAV_ITEMS.find(i => pathname.includes(i.path.replace('/(tabs)', '')));
-    return item?.emoji || '🏋️';
+    if (pathname === '/' || pathname === '/(tabs)' || pathname === '/(tabs)/index' || pathname.endsWith('/index')) return '🏋️';
+    if (pathname.includes('/calculator')) return '🧮';
+    if (pathname.includes('/research')) return '🔬';
+    if (pathname.includes('/journal')) return '📓';
+    if (pathname.includes('/profile')) return '⚙️';
+    return '🏋️';
   };
 
   const navigateTo = (path: string) => {
