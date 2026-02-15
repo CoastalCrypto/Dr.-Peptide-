@@ -36,6 +36,9 @@ export default function ProfileScreen() {
   // AI Summary state
   const [loadingSummary, setLoadingSummary] = useState(false);
   const [weeklyRecap, setWeeklyRecap] = useState<any>(null);
+  
+  // Vendor Management state
+  const [showVendorManagement, setShowVendorManagement] = useState(false);
 
   useEffect(() => {
     Storage.get<any>(KEYS.USER).then(u => setUser(u));
