@@ -427,6 +427,12 @@ export default function HomeScreen() {
           </View>
         </TouchableOpacity>
       </Modal>
+
+      {/* Injection Site Tracker Modal */}
+      <InjectionSiteTracker 
+        visible={showInjectionTracker} 
+        onClose={() => setShowInjectionTracker(false)} 
+      />
     </SafeAreaView>
   );
 }
