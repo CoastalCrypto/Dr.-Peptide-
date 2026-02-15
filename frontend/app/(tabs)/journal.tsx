@@ -104,7 +104,7 @@ export default function JournalScreen() {
     resetForm();
   };
 
-  const resetForm = () => { setWeight(''); setEnergy(0); setSleepQuality(0); setSleepHours(''); setMood(''); setNotes(''); };
+  const resetForm = () => { setWeight(''); setEnergy(0); setSleepQuality(0); setSleepHours(''); setMood(''); setGymType(''); setGymDuration(''); setGymIntensity(0); setNotes(''); };
 
   const weightData = entries.slice(0, 7).reverse().map(e => e.weight || 0);
   const energyData = entries.slice(0, 7).reverse().map(e => e.energy_level || 0);
