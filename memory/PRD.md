@@ -185,7 +185,19 @@ All-in-one health companion app for researching, calculating dosages, tracking u
 - **Pre-publish validation**: All checks pass ✅
 - **Backend**: Healthy, MongoDB connected
 - **Frontend**: All screens functional
-- **Remaining for App Store submission**:
+
+### GitHub Changes Applied (claude/prepare-app-store-deployment-BgZVN branch):
+- ✅ iOS privacy manifests and encryption declarations
+- ✅ POST_NOTIFICATIONS Android permission
+- ✅ iOS auto-increment buildNumber and appVersionSource
+- ✅ Apple Team ID in submit config
+- ✅ API client graceful failure when backend URL not configured
+- ✅ Dynamic version display using expo-constants
+- ✅ Delete Account button in Profile
+- ✅ Legal section (Privacy Policy, Terms of Service links)
+- ✅ Updated .gitignore for signing keys, keystores, build artifacts
+
+### Remaining for App Store submission:
   1. Create Expo account and run `eas init` to set projectId
   2. Deploy backend to Railway/Render
   3. Update `EXPO_PUBLIC_BACKEND_URL` in eas.json
