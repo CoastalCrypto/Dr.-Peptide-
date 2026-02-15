@@ -449,6 +449,50 @@ export default function ProfileScreen() {
           <Text style={styles.disclaimerText}>{DISCLAIMER}</Text>
         </View>
       </ScrollView>
+      
+      {/* PIN Setup Modal */}
+      <Modal visible={showPINModal} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <View style={styles.pinModal}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Set PIN Lock</Text>
+              <TouchableOpacity onPress={() => { setShowPINModal(false); setPinInput(''); setPinConfirm(''); }}>
+                <MaterialCommunityIcons name="close" size={24} color={colors.textTertiary} />
+              </TouchableOpacity>
+            </View>
+            
+            <Text style={styles.pinLabel}>Enter PIN (min 4 digits)</Text>
+            <TextInput
+              testID="pin-input"
+              style={styles.pinInput}
+              value={pinInput}
+              onChangeText={setPinInput}
+              keyboardType="numeric"
+              secureTextEntry
+              maxLength={6}
+              placeholder="Enter PIN"
+              placeholderTextColor={colors.textTertiary}
+            />
+            
+            <Text style={styles.pinLabel}>Confirm PIN</Text>
+            <TextInput
+              testID="pin-confirm"
+              style={styles.pinInput}
+              value={pinConfirm}
+              onChangeText={setPinConfirm}
+              keyboardType="numeric"
+              secureTextEntry
+              maxLength={6}
+              placeholder="Confirm PIN"
+              placeholderTextColor={colors.textTertiary}
+            />
+            
+            <TouchableOpacity testID="save-pin-btn" style={styles.savePinBtn} onPress={savePIN}>
+              <Text style={styles.savePinBtnText}>Save PIN</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
