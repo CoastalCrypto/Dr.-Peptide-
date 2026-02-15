@@ -243,23 +243,6 @@ export default function ProfileScreen() {
     ]);
   };
   
-  const generateAISummary = async () => {
-    setLoadingSummary(true);
-    try {
-      const journal = await Storage.get<any[]>(KEYS.JOURNAL_ENTRIES) || [];
-      const items = await Storage.get<any[]>(KEYS.RECURRING_ITEMS) || [];
-      const response = await api.post('/api/ai/summary', {
-        journal_data: journal.slice(0, 10),
-        tracked_items: items.slice(0, 10),
-      });
-      Alert.alert('Weekly Health Summary', response.summary);
-    } catch (error: any) {
-      Alert.alert('Error', 'Failed to generate summary. Please try again.');
-    } finally {
-      setLoadingSummary(false);
-    }
-  };
-  
   // Cloud Sync Functions
   const checkSyncStatus = async () => {
     if (!user?.user_id) return;
