@@ -175,6 +175,95 @@ export default function ProfileScreen() {
       setLoadingSummary(false);
     }
   };
+  
+  // Cloud Sync Functions
+  const checkSyncStatus = async () => {
+    if (!user?.user_id) return;
+    try {
+      const status = await CloudSyncService.getSyncInfo(user.user_id);
+      setLastSyncTime(status.lastSync);
+      setHasCloudData(status.hasCloudData);
+    } catch (error) {
+      console.error('Failed to check sync status:', error);
+    }
+  };
+  
+  const handleBackupToCloud = async () => {
+    if (!user?.user_id) {
+      Alert.alert('Sign In Required', 'Please sign in with Google to backup your data.');
+      return;
+    }
+    
+    setSyncStatus('syncing');
+    try {
+      const result = await CloudSyncService.syncToCloud(user.user_id);
+      if (result.success) {
+        setSyncStatus('synced');
+        setLastSyncTime(new Date().toISOString());
+        setHasCloudData(true);
+        Alert.alert('Backup Complete', 'Your data has been backed up to the cloud successfully.');
+      } else {
+        setSyncStatus('error');
+        Alert.alert('Backup Failed', result.error || 'Failed to backup data. Please try again.');
+      }
+    } catch (error) {
+      setSyncStatus('error');
+      Alert.alert('Backup Failed', 'An error occurred while backing up your data.');
+    }
+  };
+  
+  const handleRestoreFromCloud = async () => {
+    if (!user?.user_id) {
+      Alert.alert('Sign In Required', 'Please sign in with Google to restore your data.');
+      return;
+    }
+    
+    Alert.alert(
+      'Restore from Cloud',
+      'This will replace your local data with data from the cloud. Continue?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Restore', onPress: async () => {
+          setSyncStatus('syncing');
+          try {
+            const result = await CloudSyncService.syncFromCloud(user.user_id);
+            if (result.success) {
+              setSyncStatus('synced');
+              Alert.alert('Restore Complete', 'Your data has been restored from the cloud.');
+            } else {
+              setSyncStatus('error');
+              Alert.alert('Restore Failed', result.error || 'Failed to restore data.');
+            }
+          } catch (error) {
+            setSyncStatus('error');
+            Alert.alert('Restore Failed', 'An error occurred while restoring your data.');
+          }
+        }},
+      ]
+    );
+  };
+  
+  const handleMergeData = async () => {
+    if (!user?.user_id) {
+      Alert.alert('Sign In Required', 'Please sign in with Google to merge your data.');
+      return;
+    }
+    
+    setSyncStatus('syncing');
+    try {
+      const result = await CloudSyncService.mergeData(user.user_id);
+      if (result.success) {
+        setSyncStatus('synced');
+        Alert.alert('Merge Complete', `Data merged successfully. ${result.merged} new items added.`);
+      } else {
+        setSyncStatus('error');
+        Alert.alert('Merge Failed', 'Failed to merge data. Please try again.');
+      }
+    } catch (error) {
+      setSyncStatus('error');
+      Alert.alert('Merge Failed', 'An error occurred while merging your data.');
+    }
+  };
 
   const handleGoogleAuth = () => {
     // REMINDER: DO NOT HARDCODE THE URL, OR ADD ANY FALLBACKS OR REDIRECT URLS, THIS BREAKS THE AUTH
