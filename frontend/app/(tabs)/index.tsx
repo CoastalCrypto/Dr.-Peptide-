@@ -238,6 +238,9 @@ export default function HomeScreen() {
           <AdherenceRing taken={takenCount} total={scheduledDoses.length} colors={colors} />
         </View>
 
+        {/* Workout Streak Badge */}
+        <WorkoutStreakBadge />
+
         {/* Calendar Section */}
         <ScheduleCalendar
           selectedDate={selectedDate}
