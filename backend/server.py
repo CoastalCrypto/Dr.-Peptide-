@@ -652,6 +652,113 @@ async def delete_custom_medication(medication_id: str):
         raise HTTPException(status_code=404, detail="Custom medication not found")
     return {"message": "Deleted"}
 
+# ==================== Vendor Management CRUD ====================
+
+@api_router.post("/vendors")
+async def create_vendor(vendor: VendorCreate):
+    doc = vendor.dict()
+    doc["vendor_id"] = f"vendor_{uuid.uuid4().hex[:12]}"
+    doc["created_at"] = datetime.now(timezone.utc).isoformat()
+    doc["is_active"] = True
+    await db.vendors.insert_one(doc)
+    return await db.vendors.find_one({"vendor_id": doc["vendor_id"]}, {"_id": 0})
+
+@api_router.get("/vendors")
+async def get_vendors(active_only: bool = True):
+    query = {"is_active": True} if active_only else {}
+    return await db.vendors.find(query, {"_id": 0}).sort("name", 1).to_list(500)
+
+@api_router.get("/vendors/{vendor_id}")
+async def get_vendor(vendor_id: str):
+    vendor = await db.vendors.find_one({"vendor_id": vendor_id}, {"_id": 0})
+    if not vendor:
+        raise HTTPException(status_code=404, detail="Vendor not found")
+    return vendor
+
+@api_router.put("/vendors/{vendor_id}")
+async def update_vendor(vendor_id: str, update: VendorUpdate):
+    update_data = {k: v for k, v in update.dict().items() if v is not None}
+    if not update_data:
+        raise HTTPException(status_code=400, detail="No fields to update")
+    update_data["updated_at"] = datetime.now(timezone.utc).isoformat()
+    result = await db.vendors.update_one(
+        {"vendor_id": vendor_id},
+        {"$set": update_data}
+    )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Vendor not found")
+    return await db.vendors.find_one({"vendor_id": vendor_id}, {"_id": 0})
+
+@api_router.delete("/vendors/{vendor_id}")
+async def delete_vendor(vendor_id: str):
+    # Soft delete - mark as inactive
+    result = await db.vendors.update_one(
+        {"vendor_id": vendor_id},
+        {"$set": {"is_active": False, "deleted_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Vendor not found")
+    return {"message": "Deleted"}
+
+# ==================== Orders CRUD ====================
+
+@api_router.post("/orders")
+async def create_order(order: OrderCreate):
+    # Verify vendor exists
+    vendor = await db.vendors.find_one({"vendor_id": order.vendor_id, "is_active": True}, {"_id": 0})
+    if not vendor:
+        raise HTTPException(status_code=404, detail="Vendor not found")
+    doc = order.dict()
+    doc["order_id"] = f"order_{uuid.uuid4().hex[:12]}"
+    doc["created_at"] = datetime.now(timezone.utc).isoformat()
+    doc["vendor_name"] = vendor["name"]  # Denormalize for easy display
+    await db.orders.insert_one(doc)
+    return await db.orders.find_one({"order_id": doc["order_id"]}, {"_id": 0})
+
+@api_router.get("/orders")
+async def get_orders(vendor_id: Optional[str] = None, status: Optional[str] = None, limit: int = 100):
+    query = {}
+    if vendor_id:
+        query["vendor_id"] = vendor_id
+    if status:
+        query["status"] = status
+    return await db.orders.find(query, {"_id": 0}).sort("order_date", -1).to_list(limit)
+
+@api_router.get("/orders/{order_id}")
+async def get_order(order_id: str):
+    order = await db.orders.find_one({"order_id": order_id}, {"_id": 0})
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+    return order
+
+@api_router.put("/orders/{order_id}")
+async def update_order(order_id: str, update: OrderUpdate):
+    update_data = {k: v for k, v in update.dict().items() if v is not None}
+    if not update_data:
+        raise HTTPException(status_code=400, detail="No fields to update")
+    update_data["updated_at"] = datetime.now(timezone.utc).isoformat()
+    result = await db.orders.update_one(
+        {"order_id": order_id},
+        {"$set": update_data}
+    )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Order not found")
+    return await db.orders.find_one({"order_id": order_id}, {"_id": 0})
+
+@api_router.delete("/orders/{order_id}")
+async def delete_order(order_id: str):
+    result = await db.orders.delete_one({"order_id": order_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Order not found")
+    return {"message": "Deleted"}
+
+@api_router.get("/vendors/{vendor_id}/orders")
+async def get_vendor_orders(vendor_id: str, limit: int = 50):
+    """Get all orders for a specific vendor."""
+    return await db.orders.find(
+        {"vendor_id": vendor_id}, {"_id": 0}
+    ).sort("order_date", -1).to_list(limit)
+
 # ==================== Health Check ====================
 
 @api_router.get("/")
