@@ -251,6 +251,12 @@ const createStyles = (colors: any, topInset: number) => StyleSheet.create({
     color: colors.accent,
     fontWeight: '700',
   },
+  menuDivider: {
+    height: 1,
+    backgroundColor: colors.border,
+    marginVertical: 8,
+    marginHorizontal: 8,
+  },
   checkIcon: {
     marginLeft: 8,
   },
