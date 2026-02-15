@@ -49,4 +49,9 @@ export const KEYS = {
   CUSTOM_MEDS: 'peptrack_custom_meds',
   THEME_MODE: 'peptrack_theme_mode',
   RECURRING_ITEMS: 'peptrack_recurring_items',
+  REMINDERS: 'peptrack_reminders',
+  NOTIFICATIONS_ENABLED: 'peptrack_notifications_enabled',
+  INJECTION_SITES: 'peptrack_injection_sites',
+  AI_SUMMARIES: 'peptrack_ai_summaries',
+  WORKOUT_HISTORY: 'peptrack_workout_history',
 };
