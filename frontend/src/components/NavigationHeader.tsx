@@ -32,7 +32,7 @@ export function NavigationHeader() {
 
   // Get current page name using segments (more reliable than pathname)
   const getCurrentPageName = () => {
-    const lastSegment = segments[segments.length - 1];
+    const lastSegment = String(segments[segments.length - 1] || '');
     if (!lastSegment || lastSegment === '(tabs)' || lastSegment === 'index') return 'Home';
     if (lastSegment === 'calculator') return 'Calculator';
     if (lastSegment === 'research') return 'Research';
@@ -42,7 +42,7 @@ export function NavigationHeader() {
   };
 
   const getCurrentEmoji = () => {
-    const lastSegment = segments[segments.length - 1];
+    const lastSegment = String(segments[segments.length - 1] || '');
     if (!lastSegment || lastSegment === '(tabs)' || lastSegment === 'index') return '🏋️';
     if (lastSegment === 'calculator') return '🧮';
     if (lastSegment === 'research') return '🔬';
@@ -57,7 +57,7 @@ export function NavigationHeader() {
   };
 
   const isActive = (itemPath: string) => {
-    const lastSegment = segments[segments.length - 1];
+    const lastSegment = String(segments[segments.length - 1] || '');
     if (itemPath === '/(tabs)') {
       return !lastSegment || lastSegment === '(tabs)' || lastSegment === 'index';
     }
