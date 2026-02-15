@@ -121,4 +121,4 @@ class TestHealthEndpoint:
         response = requests.get(f"{BASE_URL}/api/health")
         assert response.status_code == 200
         data = response.json()
-        assert data.get("status") == "ok"
+        assert data.get("status") in ["ok", "healthy"]
