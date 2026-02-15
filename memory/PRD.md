@@ -213,6 +213,11 @@ All-in-one health companion app for researching, calculating dosages, tracking u
   - [x] Frontend: Add/Edit Order form with vendor picker, status selector, tracking fields
   - [x] Frontend: Vendor detail modal with order history and quick-add order button
   - [x] Testing: 100% backend (19/19 tests), 100% frontend pass rate
+- [x] **Calculator Scroll Fix** (Feb 15, 2026)
+  - [x] Fixed ScrollView scrolling issue on web preview
+  - [x] Added proper paddingBottom (180px) to ensure buttons are visible
+  - [x] "Save as Preset" and "Add to Schedule" buttons now accessible
+  - [x] Testing: 100% frontend pass rate
 - [x] **Journal Logging UI Enhancement**
   - [x] Added Gym Activity tracking with 8 workout types (Weights, Cardio, Yoga, Cycling, Swimming, Sports, Walking, Other)
   - [x] Duration (mins) input for workouts
