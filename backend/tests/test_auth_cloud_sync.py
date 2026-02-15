@@ -13,7 +13,7 @@ import requests
 import os
 import time
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://wellness-hub-580.preview.emergentagent.com').rstrip('/')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://peptide-research-9.preview.emergentagent.com').rstrip('/')
 
 # Test credentials created via mongosh
 TEST_SESSION_TOKEN = "test_session_auth_1771180959836"
