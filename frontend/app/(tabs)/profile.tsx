@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, Switch, Alert, Linking, Modal, TextInput, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, Switch, Alert, Linking, Modal, TextInput, ActivityIndicator, Platform } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Constants from 'expo-constants';
 import { useTheme } from '../../src/context/ThemeContext';
@@ -8,8 +8,8 @@ import { typography, spacing, DISCLAIMER } from '../../src/theme';
 import { Storage, KEYS } from '../../src/utils/storage';
 import { api } from '../../src/utils/api';
 import { useRouter } from 'expo-router';
-import { Platform } from 'react-native';
-import { NotificationService } from '../../src/services/notifications';
+import { NotificationServiceV2, NotificationSettings } from '../../src/services/notificationsV2';
+import { WeeklySummaryService } from '../../src/services/weeklySummary';
 import { AppLockService } from '../../src/services/appLock';
 import { CloudSyncService } from '../../src/services/cloudSync';
 import { VendorManagement } from '../../src/components/VendorManagement';
@@ -19,6 +19,8 @@ interface Settings {
   measureUnit: string;
   notifications: boolean;
 }
+
+const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 export default function ProfileScreen() {
   const { colors, mode, setMode, isDark } = useTheme();
@@ -38,6 +40,19 @@ export default function ProfileScreen() {
   // AI Summary state
   const [loadingSummary, setLoadingSummary] = useState(false);
   const [weeklyRecap, setWeeklyRecap] = useState<any>(null);
+  const [latestSummary, setLatestSummary] = useState<any>(null);
+  const [showSummaryModal, setShowSummaryModal] = useState(false);
+  
+  // Notification settings state
+  const [notifSettings, setNotifSettings] = useState<NotificationSettings>({
+    doseRemindersEnabled: true,
+    journalReminderEnabled: true,
+    journalReminderTime: { hour: 20, minute: 0 },
+    weeklySummaryEnabled: true,
+    weeklySummaryDay: 0,
+    weeklySummaryTime: { hour: 10, minute: 0 },
+  });
+  const [showNotifSettings, setShowNotifSettings] = useState(false);
   
   // Vendor Management state
   const [showVendorManagement, setShowVendorManagement] = useState(false);
