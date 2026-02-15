@@ -79,7 +79,7 @@ export const WeeklySummaryService = {
     });
     
     // Calculate stats
-    const workoutsThisWeek = weekEntries.filter(e => e.gym_activity?.duration_mins > 0);
+    const workoutsThisWeek = weekEntries.filter(e => (e.gym_activity?.duration_mins || 0) > 0);
     const sleepEntries = weekEntries.filter(e => e.sleep_quality);
     const energyEntries = weekEntries.filter(e => e.energy_level);
     const moodEntries = weekEntries.filter(e => e.mood);
