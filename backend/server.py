@@ -260,7 +260,8 @@ async def ai_summary(req: AiSummaryRequest):
             session_id=f"sum-{uuid.uuid4().hex[:8]}",
             system_message="You are PepTrack Pro's health analytics AI. Generate concise weekly health summaries from journal data. Highlight trends, correlations, and practical suggestions. Be encouraging but evidence-based."
         )
-        chat.with_model("openai", "gpt-5.2")
+        # Use Gemini 3 Flash for faster response times
+        chat.with_model("gemini", "gemini-3-flash-preview")
         data_str = f"Journal entries: {req.journal_data[:10]}\nTracked items: {req.tracked_items[:10]}"
         resp = await chat.send_message(UserMessage(text=f"Generate a concise weekly health summary:\n{data_str}"))
         return {"summary": resp}
