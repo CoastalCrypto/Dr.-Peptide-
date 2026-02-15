@@ -15,6 +15,11 @@ interface JournalEntry {
   sleep_quality?: number;
   sleep_hours?: number;
   mood?: string;
+  gym_activity?: {
+    type: string;
+    duration_mins: number;
+    intensity: number;
+  };
   notes?: string;
 }
 
