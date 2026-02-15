@@ -70,7 +70,7 @@ export function NavigationHeader() {
           style={styles.menuButton} 
           onPress={() => setMenuOpen(true)}
         >
-          <MaterialCommunityIcons name="menu" size={28} color={colors.textPrimary} />
+          <Text style={{ fontSize: 22 }}>☰</Text>
         </TouchableOpacity>
         
         <View style={styles.titleContainer}>
