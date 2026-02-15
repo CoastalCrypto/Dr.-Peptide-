@@ -117,6 +117,72 @@ export default function CalculatorScreen() {
     setDoseMcg(p.doseMcg);
   };
 
+  const deletePreset = async (presetId: string) => {
+    Alert.alert('Delete Preset', 'Are you sure you want to delete this preset?', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Delete', style: 'destructive', onPress: async () => {
+        const updated = presets.filter(p => p.id !== presetId);
+        await Storage.set(KEYS.CALCULATOR_PRESETS, updated);
+        setPresets(updated);
+      }},
+    ]);
+  };
+
+  const addToSchedule = async () => {
+    if (!scheduleName.trim()) {
+      Alert.alert('Error', 'Please enter a name for the scheduled item');
+      return;
+    }
+
+    const doseLabel = doseMcg >= 1000 ? `${doseMcg / 1000} mg` : `${doseMcg} mcg`;
+    const newItem: Omit<RecurringItem, 'item_id' | 'is_active' | 'created_at'> = {
+      name: scheduleName,
+      type: 'peptide',
+      dosage_amount: doseMcg,
+      dosage_unit: 'mcg',
+      route: 'Subcutaneous',
+      recurrence_type: scheduleFrequency,
+      recurrence_days: scheduleDays,
+      recurrence_interval: 1,
+      times_of_day: [scheduleTime],
+      start_date: new Date().toISOString().split('T')[0],
+      notes: `Calculator: ${vialMg}mg vial, ${bacWaterMl}mL BAC water, draw ${unitsToDraw.toFixed(1)} units`,
+      category: 'peptide',
+      reminder_enabled: true,
+    };
+
+    try {
+      // Save to local storage (for offline use)
+      const existingItems = await Storage.get<RecurringItem[]>(KEYS.RECURRING_ITEMS) || [];
+      const localItem: RecurringItem = {
+        ...newItem,
+        item_id: `local_${Date.now()}`,
+        is_active: true,
+        created_at: new Date().toISOString(),
+      };
+      await Storage.set(KEYS.RECURRING_ITEMS, [...existingItems, localItem]);
+
+      setShowScheduleModal(false);
+      setScheduleName('');
+      Alert.alert('Success', `${scheduleName} has been added to your schedule!`, [
+        { text: 'View Schedule', onPress: () => router.push('/') },
+        { text: 'OK' },
+      ]);
+    } catch (error) {
+      Alert.alert('Error', 'Failed to add to schedule. Please try again.');
+    }
+  };
+
+  const toggleScheduleDay = (day: number) => {
+    if (scheduleDays.includes(day)) {
+      if (scheduleDays.length > 1) {
+        setScheduleDays(scheduleDays.filter(d => d !== day));
+      }
+    } else {
+      setScheduleDays([...scheduleDays, day].sort());
+    }
+  };
+
   const applyCustom = () => {
     if (showCustomModal === 'vial' && customVial) setVialMg(parseFloat(customVial));
     if (showCustomModal === 'water' && customWater) setBacWaterMl(parseFloat(customWater));
