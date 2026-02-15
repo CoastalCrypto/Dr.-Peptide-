@@ -171,9 +171,8 @@ All-in-one health companion app for researching, calculating dosages, tracking u
 ---
 
 ## Upcoming Tasks
-- [ ] Theme persistence fix for web preview (storage.ts update)
-- [ ] Journal: Full logging UI with charts (Victory Native)
 - [ ] Research: Full-text search, "Browse by Goal" filtering, Comparison Tool
+- [ ] Victory Native charts for Journal metrics (Weight, Energy, Gym Activity trends)
 - [ ] Push notifications for reminders
 
 ---
@@ -185,6 +184,19 @@ All-in-one health companion app for researching, calculating dosages, tracking u
 - [ ] Data export (CSV/PDF)
 - [ ] Biometric/PIN app lock
 - [ ] OpenFDA API integration
+
+---
+
+## Completed Tasks (Feb 15, 2026 - Continued)
+- [x] **Journal Logging UI Enhancement**
+  - [x] Added Gym Activity tracking with 8 workout types (Weights, Cardio, Yoga, Cycling, Swimming, Sports, Walking, Other)
+  - [x] Duration (mins) input for workouts
+  - [x] Intensity scale (1-10) for workouts
+  - [x] Gym Activity displayed in Recent Entries
+  - [x] Gym Activity mini bar chart in Trends tab
+- [x] **Theme Persistence Fix for Web**
+  - [x] Updated storage.ts to use localStorage on web platform
+  - [x] Theme preference now persists across page reloads on web preview
 
 ---
 
