@@ -183,7 +183,8 @@ export default function JournalScreen() {
             <Text style={styles.sectionTitle}>7-Day Trends</Text>
             {weightData.some(v => v > 0) && <MiniBarChart data={weightData} max={Math.max(...weightData) * 1.1} label="Weight (lbs)" colors={colors} />}
             {energyData.some(v => v > 0) && <MiniBarChart data={energyData} max={10} label="Energy Level" colors={colors} />}
-            {!weightData.some(v => v > 0) && !energyData.some(v => v > 0) && (
+            {gymData.some(v => v > 0) && <MiniBarChart data={gymData} max={Math.max(...gymData, 60)} label="Gym Activity (mins)" colors={colors} />}
+            {!weightData.some(v => v > 0) && !energyData.some(v => v > 0) && !gymData.some(v => v > 0) && (
               <View style={styles.emptyCard}>
                 <MaterialCommunityIcons name="chart-line" size={48} color={colors.textTertiary} />
                 <Text style={styles.emptyText}>Not enough data for trends</Text>
