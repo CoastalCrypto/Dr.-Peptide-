@@ -66,6 +66,9 @@ export default function JournalScreen() {
   const [sleepQuality, setSleepQuality] = useState(0);
   const [sleepHours, setSleepHours] = useState('');
   const [mood, setMood] = useState('');
+  const [gymType, setGymType] = useState('');
+  const [gymDuration, setGymDuration] = useState('');
+  const [gymIntensity, setGymIntensity] = useState(0);
   const [notes, setNotes] = useState('');
   const [tab, setTab] = useState<'log' | 'trends'>('log');
 
