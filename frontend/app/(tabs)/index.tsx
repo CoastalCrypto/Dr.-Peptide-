@@ -9,6 +9,7 @@ import { recurringItemsApi } from '../../src/utils/api';
 import { useFocusEffect } from 'expo-router';
 import { ScheduleCalendar } from '../../src/components/ScheduleCalendar';
 import { AddRecurringItemModal } from '../../src/components/AddRecurringItemModal';
+import { InjectionSiteTracker } from '../../src/components/InjectionSiteTracker';
 import { RecurringItem, RecurringDoseLog, DoseStatus, CATEGORY_COLORS, ItemCategory } from '../../src/types/recurring';
 
 const TIME_SLOTS = ['Morning', 'Afternoon', 'Evening', 'Bedtime'];
