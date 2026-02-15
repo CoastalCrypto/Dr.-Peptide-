@@ -880,6 +880,124 @@ async def health_check():
         logger.error(f"Health check failed: {e}")
         raise HTTPException(status_code=503, detail=f"Database unavailable: {str(e)}")
 
+# ==================== Cloud Sync Endpoints ====================
+
+class SyncBackupRequest(BaseModel):
+    user_id: str
+    data: dict
+
+@api_router.post("/sync/backup")
+async def sync_backup(req: SyncBackupRequest, request: Request):
+    """Backup user data to cloud storage."""
+    # Verify authentication
+    token = request.cookies.get("session_token")
+    auth_h = request.headers.get("Authorization", "")
+    if auth_h.startswith("Bearer "):
+        token = auth_h[7:]
+    if not token:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    
+    session = await db.user_sessions.find_one({"session_token": token}, {"_id": 0})
+    if not session or session["user_id"] != req.user_id:
+        raise HTTPException(status_code=403, detail="Unauthorized to sync this user's data")
+    
+    try:
+        # Store or update user's sync data
+        sync_doc = {
+            "user_id": req.user_id,
+            "data": req.data,
+            "last_sync": datetime.now(timezone.utc).isoformat(),
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }
+        
+        await db.user_sync_data.update_one(
+            {"user_id": req.user_id},
+            {"$set": sync_doc},
+            upsert=True
+        )
+        
+        logger.info(f"Sync backup completed for user: {req.user_id}")
+        return {"success": True, "last_sync": sync_doc["last_sync"]}
+    except Exception as e:
+        logger.error(f"Sync backup failed: {e}")
+        raise HTTPException(status_code=500, detail="Backup failed")
+
+@api_router.get("/sync/restore/{user_id}")
+async def sync_restore(user_id: str, request: Request):
+    """Restore user data from cloud storage."""
+    # Verify authentication
+    token = request.cookies.get("session_token")
+    auth_h = request.headers.get("Authorization", "")
+    if auth_h.startswith("Bearer "):
+        token = auth_h[7:]
+    if not token:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    
+    session = await db.user_sessions.find_one({"session_token": token}, {"_id": 0})
+    if not session or session["user_id"] != user_id:
+        raise HTTPException(status_code=403, detail="Unauthorized to access this user's data")
+    
+    try:
+        sync_doc = await db.user_sync_data.find_one({"user_id": user_id}, {"_id": 0})
+        if not sync_doc:
+            return {"data": None, "last_sync": None}
+        
+        return {"data": sync_doc.get("data", {}), "last_sync": sync_doc.get("last_sync")}
+    except Exception as e:
+        logger.error(f"Sync restore failed: {e}")
+        raise HTTPException(status_code=500, detail="Restore failed")
+
+@api_router.get("/sync/status/{user_id}")
+async def sync_status(user_id: str, request: Request):
+    """Get sync status for a user."""
+    # Verify authentication
+    token = request.cookies.get("session_token")
+    auth_h = request.headers.get("Authorization", "")
+    if auth_h.startswith("Bearer "):
+        token = auth_h[7:]
+    if not token:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    
+    session = await db.user_sessions.find_one({"session_token": token}, {"_id": 0})
+    if not session or session["user_id"] != user_id:
+        raise HTTPException(status_code=403, detail="Unauthorized")
+    
+    try:
+        sync_doc = await db.user_sync_data.find_one({"user_id": user_id}, {"_id": 0})
+        if not sync_doc:
+            return {"last_sync": None, "has_data": False}
+        
+        return {
+            "last_sync": sync_doc.get("last_sync"),
+            "has_data": bool(sync_doc.get("data"))
+        }
+    except Exception as e:
+        logger.error(f"Sync status failed: {e}")
+        return {"last_sync": None, "has_data": False}
+
+@api_router.delete("/sync/clear/{user_id}")
+async def sync_clear(user_id: str, request: Request):
+    """Clear all cloud sync data for a user."""
+    # Verify authentication
+    token = request.cookies.get("session_token")
+    auth_h = request.headers.get("Authorization", "")
+    if auth_h.startswith("Bearer "):
+        token = auth_h[7:]
+    if not token:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    
+    session = await db.user_sessions.find_one({"session_token": token}, {"_id": 0})
+    if not session or session["user_id"] != user_id:
+        raise HTTPException(status_code=403, detail="Unauthorized")
+    
+    try:
+        await db.user_sync_data.delete_one({"user_id": user_id})
+        logger.info(f"Sync data cleared for user: {user_id}")
+        return {"success": True}
+    except Exception as e:
+        logger.error(f"Sync clear failed: {e}")
+        raise HTTPException(status_code=500, detail="Clear failed")
+
 app.include_router(api_router)
 
 app.add_middleware(
