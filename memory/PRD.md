@@ -252,17 +252,15 @@ All-in-one health companion app for researching, calculating dosages, tracking u
 ---
 
 ## Upcoming Tasks
-- [ ] AI-powered weekly health summaries (backend logic)
-- [ ] Full-text search on local data in Research tab
-- [ ] "Browse by Goal" filtering in Research tab
+- [ ] Integrate OpenFDA API into Research tab Medications section (frontend)
+- [ ] Push notifications actual scheduling on mobile (scaffolding exists)
 
 ---
 
 ## Future/Backlog
-- [ ] Push notifications for reminders (expo-notifications installed)
 - [ ] Data export (CSV/PDF)
-- [ ] OpenFDA API integration for live medication data
-- [ ] Multi-device sync
+- [ ] Multi-device sync with conflict resolution
+- [ ] Enhanced notification time pickers
 
 ---
 
