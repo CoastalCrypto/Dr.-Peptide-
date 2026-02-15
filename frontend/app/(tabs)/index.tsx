@@ -354,6 +354,17 @@ export default function HomeScreen() {
             </ScrollView>
           </>
         )}
+        
+        {/* Injection Site Tracker Button */}
+        <TouchableOpacity 
+          testID="injection-tracker-btn"
+          style={styles.injectionBtn} 
+          onPress={() => setShowInjectionTracker(true)}
+        >
+          <MaterialCommunityIcons name="needle" size={22} color={colors.accent} />
+          <Text style={styles.injectionBtnText}>Injection Site Tracker</Text>
+          <MaterialCommunityIcons name="chevron-right" size={22} color={colors.textTertiary} />
+        </TouchableOpacity>
       </ScrollView>
 
       {/* FAB */}
