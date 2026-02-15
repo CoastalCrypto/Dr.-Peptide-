@@ -31,6 +31,17 @@ const MOODS = [
   { emoji: '😞', label: 'Bad', value: 'bad' },
 ];
 
+const WORKOUT_TYPES = [
+  { icon: 'weight-lifter', label: 'Weights', value: 'weights' },
+  { icon: 'run', label: 'Cardio', value: 'cardio' },
+  { icon: 'yoga', label: 'Yoga', value: 'yoga' },
+  { icon: 'bike', label: 'Cycling', value: 'cycling' },
+  { icon: 'swim', label: 'Swimming', value: 'swimming' },
+  { icon: 'karate', label: 'Sports', value: 'sports' },
+  { icon: 'walk', label: 'Walking', value: 'walking' },
+  { icon: 'dumbbell', label: 'Other', value: 'other' },
+];
+
 function MiniBarChart({ data, max, label, colors }: { data: number[]; max: number; label: string; colors: any }) {
   return (
     <View style={{ backgroundColor: colors.surface, borderRadius: 16, padding: spacing.md, marginBottom: spacing.md, borderWidth: 1, borderColor: colors.border }}>
