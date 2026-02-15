@@ -1,8 +1,16 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Platform } from 'react-native';
+
+// Check if we're on web platform
+const isWeb = Platform.OS === 'web';
 
 export const Storage = {
   get: async <T>(key: string): Promise<T | null> => {
     try {
+      if (isWeb && typeof window !== 'undefined' && window.localStorage) {
+        const v = window.localStorage.getItem(key);
+        return v ? JSON.parse(v) : null;
+      }
       const v = await AsyncStorage.getItem(key);
       return v ? JSON.parse(v) : null;
     } catch {
@@ -10,9 +18,18 @@ export const Storage = {
     }
   },
   set: async (key: string, value: any): Promise<void> => {
-    await AsyncStorage.setItem(key, JSON.stringify(value));
+    const jsonValue = JSON.stringify(value);
+    if (isWeb && typeof window !== 'undefined' && window.localStorage) {
+      window.localStorage.setItem(key, jsonValue);
+      return;
+    }
+    await AsyncStorage.setItem(key, jsonValue);
   },
   remove: async (key: string): Promise<void> => {
+    if (isWeb && typeof window !== 'undefined' && window.localStorage) {
+      window.localStorage.removeItem(key);
+      return;
+    }
     await AsyncStorage.removeItem(key);
   },
 };
