@@ -266,21 +266,16 @@ export default function ProfileScreen() {
   };
 
   const handleGoogleAuth = () => {
-    // REMINDER: DO NOT HARDCODE THE URL, OR ADD ANY FALLBACKS OR REDIRECT URLS, THIS BREAKS THE AUTH
-    if (Platform.OS === 'web') {
-      const redirectUrl = window.location.origin + '/(tabs)/profile';
-      window.location.href = `https://auth.emergentagent.com/?redirect=${encodeURIComponent(redirectUrl)}`;
-    } else {
-      Alert.alert('Google Auth', 'Google Auth is available on web preview. Use the web preview to sign in.');
-    }
+    // Use the login function from AuthContext
+    login();
   };
 
   const handleLogout = async () => {
-    try {
-      await api.post('/api/auth/logout', {});
-    } catch {}
-    await Storage.remove(KEYS.USER);
-    setUser(null);
+    // Use the logout function from AuthContext
+    await logout();
+    setSyncStatus('idle');
+    setLastSyncTime(null);
+    setHasCloudData(false);
   };
 
   const exportData = async () => {
