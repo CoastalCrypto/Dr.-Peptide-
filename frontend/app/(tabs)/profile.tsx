@@ -329,6 +329,17 @@ export default function ProfileScreen() {
           </View>
         </View>
 
+        <Text style={styles.sectionTitle}>Vendors & Orders</Text>
+        <View style={styles.settingsCard}>
+          <TouchableOpacity testID="vendor-management-btn" style={styles.settingRow} onPress={() => setShowVendorManagement(true)}>
+            <View style={styles.settingInfo}>
+              <MaterialCommunityIcons name="store" size={22} color={colors.accent} />
+              <Text style={styles.settingLabel}>Manage Vendors & Orders</Text>
+            </View>
+            <MaterialCommunityIcons name="chevron-right" size={22} color={colors.textTertiary} />
+          </TouchableOpacity>
+        </View>
+
         <Text style={styles.sectionTitle}>Data Management</Text>
         <View style={styles.settingsCard}>
           <TouchableOpacity testID="export-data-btn" style={styles.settingRow} onPress={exportData}>
