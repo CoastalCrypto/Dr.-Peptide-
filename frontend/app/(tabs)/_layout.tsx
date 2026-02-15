@@ -18,8 +18,8 @@ export default function TabLayout() {
           tabBar={HiddenTabBar}
           screenOptions={{
             headerShown: false,
+            sceneStyle: { backgroundColor: colors.background },
           }}
-          sceneContainerStyle={[styles.sceneContainer, { backgroundColor: colors.background }]}
         >
           <Tabs.Screen name="index" options={{ title: 'Home' }} />
           <Tabs.Screen name="calculator" options={{ title: 'Calculator' }} />
