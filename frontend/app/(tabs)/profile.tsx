@@ -22,8 +22,8 @@ interface Settings {
 
 export default function ProfileScreen() {
   const { colors, mode, setMode, isDark } = useTheme();
+  const { user, isAuthenticated, login, logout, isLoading: authLoading } = useAuth();
   const router = useRouter();
-  const [user, setUser] = useState<any>(null);
   const [settings, setSettings] = useState<Settings>({ weightUnit: 'lbs', measureUnit: 'inches', notifications: true });
   
   // Security state
@@ -41,13 +41,24 @@ export default function ProfileScreen() {
   
   // Vendor Management state
   const [showVendorManagement, setShowVendorManagement] = useState(false);
+  
+  // Cloud Sync state
+  const [syncStatus, setSyncStatus] = useState<'idle' | 'syncing' | 'synced' | 'error'>('idle');
+  const [lastSyncTime, setLastSyncTime] = useState<string | null>(null);
+  const [hasCloudData, setHasCloudData] = useState(false);
 
   useEffect(() => {
-    Storage.get<any>(KEYS.USER).then(u => setUser(u));
     Storage.get<Settings>(KEYS.SETTINGS).then(s => { if (s) setSettings(s); });
     loadSecuritySettings();
     loadWorkoutRecap();
   }, []);
+  
+  // Check sync status when user logs in
+  useEffect(() => {
+    if (isAuthenticated && user?.user_id) {
+      checkSyncStatus();
+    }
+  }, [isAuthenticated, user?.user_id]);
   
   const loadSecuritySettings = async () => {
     const { supported, types } = await AppLockService.checkBiometricSupport();
