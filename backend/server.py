@@ -326,10 +326,15 @@ async def ai_summary(req: AiSummaryRequest):
         raise HTTPException(status_code=503, detail="AI not configured")
     try:
         from emergentintegrations.llm.chat import LlmChat, UserMessage
+        
+        system_message = f"""You are PepTrack Pro's health analytics AI. Generate concise weekly health summaries from journal data. Highlight trends, correlations, and practical suggestions. Be encouraging but evidence-based.
+
+{AI_SAFETY_INSTRUCTIONS}"""
+        
         chat = LlmChat(
             api_key=llm_key,
             session_id=f"sum-{uuid.uuid4().hex[:8]}",
-            system_message="You are PepTrack Pro's health analytics AI. Generate concise weekly health summaries from journal data. Highlight trends, correlations, and practical suggestions. Be encouraging but evidence-based."
+            system_message=system_message
         )
         # Use Gemini 3 Flash for faster response times
         chat.with_model("gemini", "gemini-3-flash-preview")
@@ -343,15 +348,26 @@ async def ai_summary(req: AiSummaryRequest):
 @api_router.post("/ai/web-search")
 async def ai_web_search(req: AiWebSearchRequest):
     """AI-powered web search for peptide/medication research with summarized results."""
+    # Content safety validation
+    is_valid, error_msg = validate_ai_query(req.query)
+    if not is_valid:
+        return {
+            "query": req.query,
+            "search_type": req.search_type,
+            "result": error_msg,
+            "blocked": True,
+            "disclaimer": "This information is for educational purposes only."
+        }
+    
     llm_key = os.environ.get('EMERGENT_LLM_KEY')
     if not llm_key:
         raise HTTPException(status_code=503, detail="AI not configured")
     try:
         from emergentintegrations.llm.chat import LlmChat, UserMessage
         
-        # Create a research-focused prompt
+        # Create a research-focused prompt with safety instructions
         if req.search_type == "peptide":
-            system_msg = """You are PepTrack Pro's peptide research AI assistant. Your role is to provide comprehensive, evidence-based information about peptides.
+            system_msg = f"""You are PepTrack Pro's peptide research AI assistant. Your role is to provide comprehensive, evidence-based information about peptides.
 
 When researching a peptide, provide:
 1. **Overview**: What it is and its primary purpose
@@ -363,9 +379,11 @@ When researching a peptide, provide:
 7. **Research Status**: Current state of clinical research
 8. **Important Warnings**: Any critical safety information
 
-IMPORTANT: Always remind users this is educational information only and they should consult a healthcare provider before using any peptide. Format your response with clear headers and bullet points for easy reading."""
+IMPORTANT: Always remind users this is educational information only and they should consult a healthcare provider before using any peptide. Format your response with clear headers and bullet points for easy reading.
+
+{AI_SAFETY_INSTRUCTIONS}"""
         else:
-            system_msg = """You are PepTrack Pro's medication research AI assistant. Your role is to provide comprehensive, evidence-based information about medications.
+            system_msg = f"""You are PepTrack Pro's medication research AI assistant. Your role is to provide comprehensive, evidence-based information about medications.
 
 When researching a medication, provide:
 1. **Overview**: What it is and its drug class
@@ -376,7 +394,9 @@ When researching a medication, provide:
 6. **Interactions**: Major drug interactions to be aware of
 7. **Warnings**: Important precautions and contraindications
 
-IMPORTANT: Always remind users this is educational information only and they should consult a healthcare provider or pharmacist for medical advice. Format your response with clear headers and bullet points for easy reading."""
+IMPORTANT: Always remind users this is educational information only and they should consult a healthcare provider or pharmacist for medical advice. Format your response with clear headers and bullet points for easy reading.
+
+{AI_SAFETY_INSTRUCTIONS}"""
 
         chat = LlmChat(
             api_key=llm_key,
