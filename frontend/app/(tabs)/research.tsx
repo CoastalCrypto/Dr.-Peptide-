@@ -73,19 +73,32 @@ export default function ResearchScreen() {
   const allPeptides = [...bundledPeptides, ...customPeptides];
   const allMeds = [...bundledMeds, ...customMeds];
 
+  // Enhanced full-text search
   const filteredPeptides = allPeptides.filter(p => {
-    const matchSearch = !search || p.name.toLowerCase().includes(search.toLowerCase()) ||
-      p.aliases.some(a => a.toLowerCase().includes(search.toLowerCase())) ||
-      p.description.toLowerCase().includes(search.toLowerCase());
+    const searchLower = search.toLowerCase();
+    const matchSearch = !search || 
+      p.name.toLowerCase().includes(searchLower) ||
+      p.aliases.some(a => a.toLowerCase().includes(searchLower)) ||
+      p.description.toLowerCase().includes(searchLower) ||
+      p.mechanism?.toLowerCase().includes(searchLower) ||
+      p.categories.some(c => c.toLowerCase().includes(searchLower)) ||
+      p.routes?.some(r => r.toLowerCase().includes(searchLower)) ||
+      p.sideEffects?.common?.some(s => s.toLowerCase().includes(searchLower)) ||
+      p.contraindications?.some(c => c.toLowerCase().includes(searchLower));
     const matchCat = !activeCategory || p.categories.includes(activeCategory);
     return matchSearch && matchCat;
   });
 
+  // Enhanced medication search
   const filteredMeds = allMeds.filter(m => {
     const s = search.toLowerCase();
-    return !search || m.genericName.toLowerCase().includes(s) ||
+    return !search || 
+      m.genericName.toLowerCase().includes(s) ||
       m.brandNames.some(b => b.toLowerCase().includes(s)) ||
-      m.drugClass.toLowerCase().includes(s);
+      m.drugClass.toLowerCase().includes(s) ||
+      m.uses?.some(u => u.toLowerCase().includes(s)) ||
+      m.sideEffects?.some(se => se.toLowerCase().includes(s)) ||
+      m.contraindications?.some(c => c.toLowerCase().includes(s));
   });
 
   // AI Web Search function
