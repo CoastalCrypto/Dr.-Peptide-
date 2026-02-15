@@ -171,9 +171,7 @@ All-in-one health companion app for researching, calculating dosages, tracking u
 ---
 
 ## Upcoming Tasks
-- [ ] App Store screenshots (generate and save to /app/assets/screenshots/)
 - [ ] Theme persistence fix for web preview (storage.ts update)
-- [ ] Calculator: "Save as Preset" and "Add to Schedule" buttons
 - [ ] Journal: Full logging UI with charts (Victory Native)
 - [ ] Research: Full-text search, "Browse by Goal" filtering, Comparison Tool
 - [ ] Push notifications for reminders
