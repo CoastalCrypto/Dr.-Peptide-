@@ -66,6 +66,9 @@ export default function ProfileScreen() {
     Storage.get<Settings>(KEYS.SETTINGS).then(s => { if (s) setSettings(s); });
     loadSecuritySettings();
     loadWorkoutRecap();
+    loadNotificationSettings();
+    loadLatestSummary();
+    checkAndAutoGenerateSummary();
   }, []);
   
   // Check sync status when user logs in
@@ -74,6 +77,23 @@ export default function ProfileScreen() {
       checkSyncStatus();
     }
   }, [isAuthenticated, user?.user_id]);
+  
+  const loadNotificationSettings = async () => {
+    const settings = await NotificationServiceV2.getSettings();
+    setNotifSettings(settings);
+  };
+  
+  const loadLatestSummary = async () => {
+    const summary = await WeeklySummaryService.getLatestSummary();
+    setLatestSummary(summary);
+  };
+  
+  const checkAndAutoGenerateSummary = async () => {
+    const newSummary = await WeeklySummaryService.checkAndAutoGenerate();
+    if (newSummary) {
+      setLatestSummary(newSummary);
+    }
+  };
   
   const loadSecuritySettings = async () => {
     const { supported, types } = await AppLockService.checkBiometricSupport();
