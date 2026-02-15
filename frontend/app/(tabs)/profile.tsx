@@ -138,12 +138,61 @@ export default function ProfileScreen() {
     
     if (key === 'notifications') {
       if (value) {
-        const granted = await NotificationService.requestPermissions();
+        const granted = await NotificationServiceV2.requestPermissions();
         if (!granted) {
           Alert.alert('Permissions Required', 'Please enable notifications in your device settings.');
           setSettings({ ...settings, notifications: false });
+        } else {
+          // Setup all notifications
+          await NotificationServiceV2.setupAllNotifications();
+        }
+      } else {
+        await NotificationServiceV2.cancelAllNotifications();
+      }
+    }
+  };
+  
+  // Notification settings handlers
+  const updateNotifSetting = async (key: keyof NotificationSettings, value: any) => {
+    const updated = { ...notifSettings, [key]: value };
+    setNotifSettings(updated);
+    await NotificationServiceV2.saveSettings(updated);
+    
+    // Re-setup notifications
+    if (settings.notifications) {
+      if (key === 'journalReminderEnabled') {
+        if (value) {
+          await NotificationServiceV2.scheduleJournalReminder(
+            updated.journalReminderTime.hour,
+            updated.journalReminderTime.minute
+          );
+        } else {
+          await NotificationServiceV2.cancelJournalReminder();
+        }
+      } else if (key === 'weeklySummaryEnabled') {
+        if (value) {
+          await NotificationServiceV2.scheduleWeeklySummary(
+            updated.weeklySummaryDay,
+            updated.weeklySummaryTime.hour,
+            updated.weeklySummaryTime.minute
+          );
+        } else {
+          await NotificationServiceV2.cancelWeeklySummary();
         }
       }
+    }
+  };
+  
+  const generateNewSummary = async () => {
+    setLoadingSummary(true);
+    try {
+      const summary = await WeeklySummaryService.generateAndSaveWeeklySummary(false);
+      setLatestSummary(summary);
+      setShowSummaryModal(true);
+    } catch (error: any) {
+      Alert.alert('Error', 'Failed to generate summary. Please try again.');
+    } finally {
+      setLoadingSummary(false);
     }
   };
   
