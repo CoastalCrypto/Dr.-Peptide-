@@ -108,6 +108,7 @@ export default function JournalScreen() {
 
   const weightData = entries.slice(0, 7).reverse().map(e => e.weight || 0);
   const energyData = entries.slice(0, 7).reverse().map(e => e.energy_level || 0);
+  const gymData = entries.slice(0, 7).reverse().map(e => e.gym_activity?.duration_mins || 0);
 
   const lastWeight = entries.find(e => e.weight)?.weight;
   const prevWeight = entries.filter(e => e.weight)[1]?.weight;
