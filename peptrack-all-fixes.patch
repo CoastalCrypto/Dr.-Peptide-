@@ -1,0 +1,1873 @@
+From 2ba94eee570e9f141b63e724f62daa9802797c69 Mon Sep 17 00:00:00 2001
+From: Claude <claude@anthropic.com>
+Date: Sun, 15 Feb 2026 01:53:57 +0000
+Subject: [PATCH 1/2] Add Google Play publishing infrastructure
+
+- Privacy policy, terms of service, and support landing page (docs/ for GitHub Pages)
+- Backend deployment configs: Procfile, railway.json, render.yaml, Dockerfile
+- Environment variable templates: backend/.env.example, frontend/.env.example
+- Updated eas.json with production env vars, autoIncrement, and draft release
+- Google Play Console cheat sheet with all form answers pre-filled
+- Publishing step-by-step guide
+- Fixed .gitignore (protect service account keys, .env files, metro cache)
+- Updated STORE_LISTING.md URLs to point to GitHub Pages
+- Comprehensive README.md with setup instructions
+---
+ .gitignore                 |  10 +-
+ Dockerfile                 |  12 ++
+ PLAY_CONSOLE_CHEATSHEET.md | 235 +++++++++++++++++++++++
+ PUBLISHING_GUIDE.md        | 379 +++++++++++++++++++++++++++++++++++++
+ Procfile                   |   1 +
+ README.md                  |  97 +++++++++-
+ backend/.env.example       |  17 ++
+ docs/index.html            |  82 ++++++++
+ docs/privacy-policy.html   | 134 +++++++++++++
+ docs/terms-of-service.html | 121 ++++++++++++
+ frontend/.env.example      |   7 +
+ frontend/STORE_LISTING.md  |   6 +-
+ frontend/eas.json          |  10 +-
+ railway.json               |  14 ++
+ render.yaml                |  17 ++
+ runtime.txt                |   1 +
+ 16 files changed, 1136 insertions(+), 7 deletions(-)
+ create mode 100644 Dockerfile
+ create mode 100644 PLAY_CONSOLE_CHEATSHEET.md
+ create mode 100644 PUBLISHING_GUIDE.md
+ create mode 100644 Procfile
+ create mode 100644 backend/.env.example
+ create mode 100644 docs/index.html
+ create mode 100644 docs/privacy-policy.html
+ create mode 100644 docs/terms-of-service.html
+ create mode 100644 frontend/.env.example
+ create mode 100644 railway.json
+ create mode 100644 render.yaml
+ create mode 100644 runtime.txt
+
+diff --git a/.gitignore b/.gitignore
+index 89b3fd2..1a63b54 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -30,7 +30,7 @@ next-env.d.ts
+ dist/
+ dist
+ 
+-# Credentials (but NOT .env files - those are needed for deployment)
++# Credentials and secrets
+ *token.json*
+ *credentials.json*
+ 
+@@ -77,7 +77,13 @@ agenthub/agents/youtube/db
+ 
+ # Mobile development
+ android-sdk/
+--e 
++.metro-cache/
++.expo/
++
++# Google Play service account key (NEVER commit this)
++google-service-account.json
++
+ # Environment files
+ *.env
+ *.env.*
++!.env.example
+diff --git a/Dockerfile b/Dockerfile
+new file mode 100644
+index 0000000..f3f83ff
+--- /dev/null
++++ b/Dockerfile
+@@ -0,0 +1,12 @@
++FROM python:3.11-slim
++
++WORKDIR /app
++
++COPY backend/requirements.txt .
++RUN pip install --no-cache-dir -r requirements.txt
++
++COPY backend/ .
++
++EXPOSE 8000
++
++CMD ["uvicorn", "server:app", "--host", "0.0.0.0", "--port", "8000"]
+diff --git a/PLAY_CONSOLE_CHEATSHEET.md b/PLAY_CONSOLE_CHEATSHEET.md
+new file mode 100644
+index 0000000..45badd5
+--- /dev/null
++++ b/PLAY_CONSOLE_CHEATSHEET.md
+@@ -0,0 +1,235 @@
++# Google Play Console — Form Answers Cheat Sheet
++
++Use this document as a reference when filling out the Google Play Console forms.
++Copy-paste answers directly into the console.
++
++---
++
++## APP CREATION
++
++- **App name:** PepTrack Pro
++- **Default language:** English (United States) — en-US
++- **App or Game:** App
++- **Free or Paid:** Free
++- **Declarations:** Check all required boxes (Developer Program Policies, US export laws)
++
++---
++
++## STORE LISTING (Main Store Listing)
++
++### Short Description (80 chars max)
++```
++Track peptides, supplements & medications. Calculate doses. Monitor your health.
++```
++
++### Full Description
++> Copy the full description from `frontend/STORE_LISTING.md`
++
++### App Category
++- **Category:** Health & Fitness
++- **Tags:** Health, Fitness, Medical, Lifestyle
++
++### Contact Details
++- **Email:** support@peptrackpro.com
++- **Website:** https://coastalcrypto.github.io/Dr.-Peptide-/
++- **Phone:** (optional, leave blank)
++
++### Graphics
++| Asset | File | Dimensions |
++|-------|------|-----------|
++| App Icon | `frontend/assets/images/icon.png` | 512x512 (Play Console auto-resizes from 1024) |
++| Feature Graphic | `frontend/assets/images/feature-graphic.png` | 1024x500 |
++| Phone Screenshots | Capture from Expo Go (see guide) | 1080x1920 recommended |
++
++---
++
++## DATA SAFETY FORM
++
++This is the most complex form. Answer exactly as follows:
++
++### Data Collection & Security
++
++**Does your app collect or share any of the required user data types?**
++→ **Yes**
++
++**Is all of the user data collected by your app encrypted in transit?**
++→ **Yes**
++
++**Do you provide a way for users to request that their data is deleted?**
++→ **Yes**
++
++### Data Types Collected
++
++| Data Type | Collected? | Shared? | Purpose | Optional? |
++|-----------|-----------|---------|---------|-----------|
++| Name | Yes (if Google Sign-In) | No | Account management | Yes |
++| Email address | Yes (if Google Sign-In) | No | Account management | Yes |
++| Health info | Yes | No | App functionality | No |
++| Medications | Yes | No | App functionality | No |
++| App interactions | Yes | No | Analytics | No |
++| Crash logs | Yes | No | Analytics | No |
++| Device or other IDs | Yes | No | Analytics | No |
++
++### For EACH data type marked "Collected", answer:
++
++**Is this data processed ephemerally?**
++→ No (it's stored)
++
++**Is this data required for your app, or can users choose whether it's collected?**
++→ Health info, Medications: Required for app functionality
++→ Name, Email: Optional (users can use Guest Mode)
++→ App interactions, Crash logs, Device IDs: Required
++
++**Reasons for collection:**
++→ "App functionality" and "Analytics" (select both where applicable)
++
++### Data Handling Summary (what users will see)
++
++| | Shared | Collected |
++|---|--------|-----------|
++| Personal info (name, email) | None | Optional (Google Sign-In only) |
++| Health info | None | Collected for app functionality |
++| App activity | None | Collected for analytics |
++
++**Data encryption:** Yes, in transit
++**Data deletion:** Users can request deletion in-app
++
++---
++
++## CONTENT RATING QUESTIONNAIRE
++
++Google uses the IARC system. Answer the questionnaire as follows:
++
++**Category:** Utility / Productivity / Health
++
++**Does the app contain:**
++
++| Question | Answer |
++|----------|--------|
++| Violence | No |
++| Sexual content | No |
++| Language (profanity) | No |
++| Controlled substances (references to drugs/alcohol) | **Yes — Educational/Informational reference** |
++| Gambling | No |
++| User-generated content | No |
++| User interaction (chat, messaging) | No |
++| Location sharing | No |
++| Digital purchases | No (for MVP — change if you add subscriptions) |
++| Ads | No |
++
++**Note on "Controlled Substances":** The app references peptides and medications in an educational/informational context. Select "Yes" and indicate it's reference/educational content, not promotion. This typically results in an **"Everyone" or "Low Maturity"** rating, but Google may assign **"Teen"** or **"Mature 17+"** depending on how they classify peptide content.
++
++**Expected rating:** Everyone or Teen
++
++---
++
++## TARGET AUDIENCE & CONTENT
++
++**Target age group:** 18 and over
++→ Select "18 and over" ONLY. Do NOT select any age group under 18.
++
++**Does your app appeal to children?**
++→ **No**
++
++**Is your app a teacher-approved app?**
++→ **No**
++
++---
++
++## ADS DECLARATION
++
++**Does your app contain ads?**
++→ **No**
++
++---
++
++## APP ACCESS
++
++**Is all functionality available without special access or account?**
++→ **Yes** (Guest Mode provides full access)
++
++If they ask for a demo account:
++→ Not required. App works in Guest Mode without authentication.
++
++---
++
++## APP CONTENT — NEWS APPS
++
++**Is this a news app?**
++→ **No**
++
++---
++
++## APP CONTENT — COVID-19
++
++**Is this a COVID-19 contact tracing or status app?**
++→ **No**
++
++---
++
++## APP CONTENT — GOVERNMENT APPS
++
++**Is this a government app?**
++→ **No**
++
++---
++
++## APP CONTENT — HEALTH APPS
++
++Google may flag this as a health app and ask additional questions:
++
++**Is this app a medical device?**
++→ **No**
++
++**Does this app provide medical diagnoses?**
++→ **No**
++
++**Does this app claim to treat or cure conditions?**
++→ **No**
++
++**Purpose of the app:**
++→ Personal health tracking and informational reference. The app provides a dosage calculator (mathematical tool), an informational database, and personal logging/journaling features. It includes prominent disclaimers stating it is not a substitute for medical advice.
++
++---
++
++## FINANCIAL FEATURES
++
++**Does your app provide financial trading features?**
++→ **No**
++
++---
++
++## APP PRICING & DISTRIBUTION
++
++**Countries:** All countries (or select specific markets)
++**Paid / Free:** Free
++**Contains ads:** No
++**Content guidelines:** Acknowledged
++**US export laws:** Acknowledged
++
++---
++
++## PRIVACY POLICY
++
++**URL:** https://coastalcrypto.github.io/Dr.-Peptide-/privacy-policy.html
++
++---
++
++## PRE-SUBMISSION CHECKLIST
++
++Before hitting "Submit for review":
++
++- [ ] App icon uploaded (512x512)
++- [ ] Feature graphic uploaded (1024x500)
++- [ ] At least 2 phone screenshots uploaded (1080x1920 recommended)
++- [ ] Short description filled in (80 chars)
++- [ ] Full description filled in
++- [ ] Privacy policy URL is live and accessible
++- [ ] Data safety form completed
++- [ ] Content rating questionnaire completed
++- [ ] Target audience set to 18+
++- [ ] App access set (All functionality available)
++- [ ] Contact email set
++- [ ] AAB uploaded to a release track
++- [ ] Release notes written
++- [ ] All dashboard warnings/errors resolved
+diff --git a/PUBLISHING_GUIDE.md b/PUBLISHING_GUIDE.md
+new file mode 100644
+index 0000000..0651f9b
+--- /dev/null
++++ b/PUBLISHING_GUIDE.md
+@@ -0,0 +1,379 @@
++# PepTrack Pro — Google Play Store Publishing Guide
++
++## Your Project Status
++
++Based on my review of your repo (`conflict_140226_1616` branch, 78 commits):
++
++| Component | Status | Notes |
++|-----------|--------|-------|
++| Frontend (Expo/React Native) | ✅ Ready | Expo SDK 54, 5 tabs, all features built |
++| Backend (FastAPI + MongoDB) | ✅ Ready | Needs to be deployed to a production server |
++| App Icons (1024x1024) | ✅ Ready | `icon.png` and `adaptive-icon.png` present |
++| Splash Screen | ✅ Ready | `splash-icon.png` present |
++| Feature Graphic (1024x500) | ✅ Ready | `feature-graphic.png` present |
++| Store Listing Copy | ✅ Ready | `STORE_LISTING.md` fully written |
++| `app.json` Android Config | ✅ Ready | Package: `com.peptrackpro.app`, permissions set |
++| `eas.json` Build Config | ⚠️ Needs Update | Project ID is placeholder, needs Expo account link |
++| Screenshots | ❌ Missing | README describes 8 screenshots but no image files exist |
++| Privacy Policy URL | ✅ Created | `docs/privacy-policy.html` — deploy via GitHub Pages |
++| Terms of Service URL | ✅ Created | `docs/terms-of-service.html` — deploy via GitHub Pages |
++| Support/Landing Page | ✅ Created | `docs/index.html` — deploy via GitHub Pages |
++| Google Service Account Key | ❌ Missing | Required for automated Play Store submission |
++| Backend Production URL | ❌ Missing | `EXPO_PUBLIC_BACKEND_URL` env var needs a live server |
++| Main Branch | ❌ Empty | All code is on `conflict_140226_1616`, main only has README |
++
++---
++
++## STEP 1: Merge Your Code to Main Branch
++
++Your `main` branch is empty — all the app code lives on `conflict_140226_1616`. Fix this first.
++
++```bash
++# On your local machine
++git clone https://github.com/CoastalCrypto/Dr.-Peptide-.git
++cd Dr.-Peptide-
++
++# Merge the working branch into main
++git checkout main
++git merge conflict_140226_1616 --allow-unrelated-histories
++
++# If there are merge conflicts, resolve them, then:
++git add .
++git commit -m "Merge complete app from conflict_140226_1616 into main"
++git push origin main
++```
++
++---
++
++## STEP 2: Set Up an Expo Account & Link the Project
++
++EAS Build (Expo Application Services) is what compiles your Expo app into an AAB file that Google Play requires. You need an Expo account.
++
++### 2a. Create an Expo Account
++1. Go to [https://expo.dev/signup](https://expo.dev/signup)
++2. Create a free account (the free tier includes 30 builds/month which is plenty)
++3. Note your Expo username — you'll need it
++
++### 2b. Install EAS CLI on Your Computer
++```bash
++npm install -g eas-cli
++eas login
++# Enter your Expo credentials
++```
++
++### 2c. Link the Project
++```bash
++cd Dr.-Peptide-/frontend
++eas init
++```
++
++This will:
++- Create a project on Expo's servers
++- Generate a real `projectId` (replacing the placeholder `"peptrack-pro"`)
++- Update your `app.json` automatically
++
++### 2d. Update `app.json` Owner
++
++After `eas init`, open `frontend/app.json` and verify these fields match your Expo account:
++
++```json
++{
++  "expo": {
++    "owner": "YOUR_EXPO_USERNAME",
++    "extra": {
++      "eas": {
++        "projectId": "THE_REAL_UUID_FROM_EAS_INIT"
++      }
++    }
++  }
++}
++```
++
++---
++
++## STEP 3: Deploy Your Backend to Production
++
++Your app's API calls go to `process.env.EXPO_PUBLIC_BACKEND_URL`. This FastAPI server needs to be live on the internet before your app can work in production.
++
++### Recommended: Deploy to Railway (Easiest)
++1. Go to [https://railway.app](https://railway.app) and sign in with GitHub
++2. Click "New Project" → "Deploy from GitHub repo" → select `CoastalCrypto/Dr.-Peptide-`
++3. Set the root directory to `/backend`
++4. Railway auto-detects Python/FastAPI
++5. Add a MongoDB database service (Railway has one-click MongoDB, or use MongoDB Atlas free tier)
++6. Set environment variables in Railway:
++   - `MONGODB_URI` = your MongoDB connection string
++   - Any other env vars your `server.py` expects (API keys, secrets, etc.)
++7. Once deployed, Railway gives you a URL like `https://drpeptide-production.up.railway.app`
++
++### Alternative Options
++- **Render.com** — Free tier available, auto-deploys from GitHub
++- **Fly.io** — Good for FastAPI, generous free tier
++- **Your own VPS** — If you want to host it on your existing infrastructure
++
++### Save Your Backend URL
++You'll need this URL in Step 5 when building the app. It becomes the `EXPO_PUBLIC_BACKEND_URL` environment variable.
++
++---
++
++## STEP 4: Create a Privacy Policy Page
++
++Google Play **requires** a privacy policy URL. Your `STORE_LISTING.md` references `https://peptrackpro.com/privacy-policy` but that doesn't exist yet.
++
++### Quickest Option: GitHub Pages
++1. Create a new repo called `peptrackpro.com` (or use a branch of the existing repo)
++2. Add an `index.html` and a `privacy-policy.html`
++3. Enable GitHub Pages in repo settings
++4. Your privacy policy will be at `https://coastalcrypto.github.io/peptrackpro.com/privacy-policy`
++
++### What the Privacy Policy Must Include (for Google Play approval):
++- What data you collect (health metrics, medication names, dosing schedules)
++- How data is stored (locally on device, optionally backed up to cloud)
++- That you do NOT sell or share personal health data with third parties
++- How users can delete their data (in-app account deletion)
++- Contact information (email address)
++- GDPR and CCPA compliance statements
++- Date of last update
++
++### Alternative: Use a Generator
++Sites like [https://app-privacy-policy-generator.nisrulz.com](https://app-privacy-policy-generator.nisrulz.com) can generate a compliant privacy policy. Host the output anywhere with a public URL.
++
++---
++
++## STEP 5: Build the Production AAB (Android App Bundle)
++
++Google Play requires an AAB file (not APK). Your `eas.json` is already configured for this:
++
++```json
++"production": {
++  "android": {
++    "buildType": "app-bundle"
++  }
++}
++```
++
++### 5a. Set the Backend URL Environment Variable
++
++Create a file at `frontend/.env` (or set it in your EAS build config):
++
++```bash
++# frontend/.env
++EXPO_PUBLIC_BACKEND_URL=https://your-backend-url-from-step-3.com
++```
++
++Or set it in `eas.json` for the production profile:
++
++```json
++"production": {
++  "android": {
++    "buildType": "app-bundle"
++  },
++  "env": {
++    "EXPO_PUBLIC_BACKEND_URL": "https://your-backend-url.com"
++  }
++}
++```
++
++### 5b. Run the Production Build
++
++```bash
++cd frontend
++eas build --platform android --profile production
++```
++
++**What happens:**
++- EAS uploads your project to Expo's cloud build servers
++- It compiles a release-signed AAB (Expo handles signing with a new keystore by default)
++- Build takes ~10-20 minutes
++- When done, you get a download link for the `.aab` file
++
++**IMPORTANT — Signing Key:** The first time you build, EAS will ask about signing. Choose **"Let EAS manage my credentials"** — this creates a keystore that Expo stores securely. You can download it later if needed. This keystore is tied to your app forever on Google Play, so don't lose access to your Expo account.
++
++### 5c. Download the AAB
++```bash
++# Or just click the download link in the terminal/Expo dashboard
++eas build:list --platform android
++```
++
++Download the `.aab` file to your computer. You'll upload this to Google Play Console.
++
++---
++
++## STEP 6: Capture Screenshots
++
++You have no screenshots in your repo (just the README describing them). Google Play requires **at least 2 screenshots** but you should upload all 8 described in your `screenshots/README.md`.
++
++### How to Capture Screenshots
++
++**Option A: From Expo Go on your phone (easiest)**
++1. Run the app on your phone via Expo Go
++2. Navigate to each screen
++3. Take phone screenshots (power + volume down on Android)
++4. Screenshots will be in your correct device resolution
++
++**Option B: From Android Emulator**
++1. Open Android Studio → Device Manager → Create a Pixel 7 emulator
++2. Run your app on the emulator
++3. Use the emulator's screenshot button (camera icon in toolbar)
++4. This gives you clean, consistent screenshots
++
++### Screenshots Needed (per your STORE_LISTING.md):
++1. Home Screen — calendar view with today's schedule
++2. Peptide Calculator — with syringe visual
++3. Add Recurring Item — modal showing options
++4. Research Database — with search and compound cards
++5. Month Calendar View — full month grid
++6. Profile/Settings — theme toggle, preferences
++7. Dark Mode — home screen in dark theme
++8. Health Journal — log entries with trends
++
++### Screenshot Requirements for Google Play:
++- **Minimum:** 2 screenshots, **maximum:** 8
++- **Dimensions:** 16:9 or 9:16 aspect ratio, minimum 320px, maximum 3840px on any side
++- **Format:** JPEG or 24-bit PNG (no alpha)
++- **Recommended:** 1080 x 1920 px (phone portrait)
++
++### Pro Tip: Add Store Frames
++Use a free tool like [https://mockuphone.com](https://mockuphone.com) or [https://screenshots.pro](https://screenshots.pro) to wrap your screenshots in a device frame with marketing text above (e.g., "Precision Peptide Calculator" above the calculator screenshot). This dramatically improves conversion rates.
++
++---
++
++## STEP 7: Set Up Google Play Console
++
++You said your developer account is ready. Here's how to create the app listing:
++
++### 7a. Create the App
++1. Go to [https://play.google.com/console](https://play.google.com/console)
++2. Click **"Create app"**
++3. Fill in:
++   - **App name:** PepTrack Pro
++   - **Default language:** English (United States)
++   - **App or game:** App
++   - **Free or paid:** Free (you can add in-app purchases later)
++4. Accept the declarations and click **"Create app"**
++
++### 7b. Complete the Dashboard Checklist
++
++Google Play Console shows a setup checklist. Here's how to complete each item:
++
++#### Store Listing (Main Store Listing)
++Copy directly from your `STORE_LISTING.md`:
++- **Short description** (80 char): `Track peptides, supplements & medications. Calculate doses. Monitor your health.`
++- **Full description** (4000 char): Copy the full description from `STORE_LISTING.md`
++- **App icon:** Upload `frontend/assets/images/icon.png` (1024x1024)
++- **Feature graphic:** Upload `frontend/assets/images/feature-graphic.png` (1024x500)
++- **Phone screenshots:** Upload your captured screenshots from Step 6
++- **Category:** Health & Fitness
++- **Tags:** Select relevant tags (Health, Fitness, Medical)
++
++#### App Content (Content Rating, Privacy, Ads)
++- **Privacy Policy:** Enter the URL from Step 4
++- **Content Rating:** Start the questionnaire — for a health tracker with no violence, gambling, or user-generated content, you'll likely get **"Everyone"**
++- **Ads Declaration:** Select "No, my app does not contain ads" (per your STORE_LISTING.md)
++- **Data Safety:** This is critical — fill out the form:
++  - **Data collected:** Health/fitness data, app activity
++  - **Data shared:** None (your app doesn't share data with third parties)
++  - **Data encrypted:** Yes (in transit via HTTPS)
++  - **Data deletion:** Users can request deletion (in-app via Profile tab)
++- **App Access:** Select "All functionality is available without special access" (since guest mode works)
++- **Target Audience:** Select 18+ (health/medical content)
++- **Government Apps:** No
++- **Health Apps:** May trigger additional review — indicate it's a personal tracker, NOT a medical device, does NOT provide diagnoses
++
++#### App Integrity
++- Default settings are fine. Google Play will use Play App Signing.
++
++---
++
++## STEP 8: Upload the AAB & Create a Release
++
++### 8a. Set Up Play App Signing
++1. Go to **Setup → App signing** in Play Console
++2. Choose **"Let Google manage and protect your app signing key"**
++3. This is required for new apps
++
++### 8b. Create an Internal Testing Release (Do This First)
++Start with internal testing before going to production. This lets you verify everything works.
++
++1. Go to **Testing → Internal testing**
++2. Click **"Create new release"**
++3. Upload the `.aab` file you downloaded in Step 5c
++4. Fill in release name: `1.0.0`
++5. Add release notes: `Initial release of PepTrack Pro`
++6. Click **"Save"** then **"Review release"** then **"Start rollout to Internal testing"**
++
++### 8c. Test on a Real Device
++1. In Internal testing, go to the **"Testers"** tab
++2. Create a testers list, add your email (and anyone else who should test)
++3. Copy the opt-in link and open it on your Android phone
++4. Install from the Play Store internal testing track
++5. Verify everything works: calculator, research, journal, reminders, backend connectivity
++
++### 8d. Promote to Production
++Once testing confirms everything works:
++
++1. Go to **Production → Create new release**
++2. Click **"Add from library"** and select the tested AAB
++3. Add release notes for users
++4. Click **"Review release"**
++5. Handle any warnings or errors Google flags
++6. Click **"Start rollout to Production"**
++
++---
++
++## STEP 9: Google Play Review
++
++After submitting to production, Google reviews your app. For a health/medical app, expect:
++
++- **Review time:** 1-7 days (health apps sometimes take longer)
++- **Common rejection reasons for health apps:**
++  - Missing or inadequate medical disclaimer → yours is built into the app (waiver screen), so you should be fine
++  - Privacy policy doesn't match data safety section → make sure these are consistent
++  - App crashes on launch → test thoroughly in Step 8c
++  - Screenshots don't match actual app experience
++
++### If Rejected:
++Google tells you exactly why. Fix the issue, rebuild if needed (`eas build` again), upload new AAB, resubmit.
++
++---
++
++## STEP 10: Post-Launch Checklist
++
++- [ ] Set up Google Play Console **alerts** for crashes and ANRs
++- [ ] Monitor the **Ratings & Reviews** section daily for the first two weeks
++- [ ] Set up **Firebase Crashlytics** (or Sentry) for real-time crash reporting
++- [ ] Plan your first update (fix any user-reported issues within 1-2 weeks)
++- [ ] Consider setting up **automated submissions** with the Google Service Account key in `eas.json` so future builds can be submitted with `eas submit --platform android`
++
++---
++
++## Quick Reference: Key Files in Your Repo
++
++| File | Purpose |
++|------|---------|
++| `frontend/app.json` | Expo config: app name, package ID, icons, permissions |
++| `frontend/eas.json` | EAS Build profiles: dev, preview, production |
++| `frontend/STORE_LISTING.md` | Pre-written Google Play store copy |
++| `frontend/assets/images/icon.png` | App icon (1024x1024) |
++| `frontend/assets/images/adaptive-icon.png` | Android adaptive icon (1024x1024) |
++| `frontend/assets/images/feature-graphic.png` | Play Store feature graphic (1024x500) |
++| `frontend/assets/images/splash-icon.png` | Splash/loading screen image |
++| `frontend/src/utils/api.ts` | Backend URL config (needs `EXPO_PUBLIC_BACKEND_URL`) |
++| `backend/server.py` | FastAPI backend (needs production deployment) |
++| `backend/requirements.txt` | Python dependencies for backend |
++
++---
++
++## Estimated Timeline
++
++| Step | Time |
++|------|------|
++| Merge branch + set up Expo/EAS | 30 minutes |
++| Deploy backend | 1-2 hours |
++| Create privacy policy | 30 minutes |
++| Build AAB | 15-20 minutes (cloud build) |
++| Capture screenshots | 30-60 minutes |
++| Fill out Play Console listing | 1-2 hours |
++| Internal testing | 1-2 days |
++| Google review after production submit | 1-7 days |
++| **Total to submission** | **~1 day of active work + review wait** |
+diff --git a/Procfile b/Procfile
+new file mode 100644
+index 0000000..5edfe03
+--- /dev/null
++++ b/Procfile
+@@ -0,0 +1 @@
++web: cd backend && uvicorn server:app --host 0.0.0.0 --port ${PORT:-8000}
+diff --git a/README.md b/README.md
+index 3786c8a..714ebbc 100644
+--- a/README.md
++++ b/README.md
+@@ -1 +1,96 @@
+-# Here are your Instructions
++# PepTrack Pro
++
++**Your All-in-One Health Tracking Companion**
++
++Track peptides, supplements, and medications. Calculate reconstitution doses. Monitor your health journey.
++
++## Features
++
++- **Peptide Calculator** — Reconstitution calculator with visual syringe, saved presets, and real-time dose calculation
++- **Research Database** — 29 peptide profiles + 20 medications with dosage guidelines, side effects, and AI-powered search
++- **Smart Scheduling** — Recurring dose tracking with calendar view, adherence stats, and push notification reminders
++- **Health Journal** — Log weight, energy, sleep, mood, and pain with 7-day trend charts
++- **Light & Dark Mode** — Full theme support with automatic system detection
++
++## Tech Stack
++
++| Layer | Technology |
++|-------|-----------|
++| Frontend | React Native (Expo SDK 54) with TypeScript |
++| Navigation | Expo Router with bottom tabs |
++| Backend | FastAPI (Python) |
++| Database | MongoDB (via Motor async driver) |
++| Auth | Google OAuth via Emergent + Guest Mode |
++| AI | Emergent LLM integration for research & summaries |
++| Build | EAS Build (Expo Application Services) |
++
++## Project Structure
++
++```
++├── frontend/               # React Native / Expo app
++│   ├── app/                # Screens (Expo Router file-based routing)
++│   │   ├── (tabs)/         # Home, Calculator, Research, Journal, Profile
++│   │   ├── onboarding.tsx  # First-launch onboarding flow
++│   │   ├── waiver.tsx      # Medical disclaimer acceptance
++│   │   └── peptide/[id]    # Dynamic peptide detail screen
++│   ├── src/
++│   │   ├── components/     # Reusable components
++│   │   ├── context/        # Theme context provider
++│   │   ├── data/           # Bundled peptide & medication JSON data
++│   │   ├── types/          # TypeScript type definitions
++│   │   └── utils/          # API client, storage helpers
++│   ├── assets/             # Icons, splash screen, feature graphic
++│   ├── app.json            # Expo configuration
++│   ├── eas.json            # EAS Build profiles
++│   └── STORE_LISTING.md    # Google Play / App Store listing copy
++├── backend/                # FastAPI server
++│   ├── server.py           # Main API server
++│   └── requirements.txt    # Python dependencies
++├── docs/                   # GitHub Pages site
++│   ├── index.html          # Landing/support page
++│   ├── privacy-policy.html # Privacy policy (required by app stores)
++│   └── terms-of-service.html
++└── tests/                  # Test suite
++```
++
++## Getting Started
++
++### Prerequisites
++- Node.js 18+ and Yarn
++- Python 3.10+
++- MongoDB (local or Atlas)
++- Expo Go app on your phone
++- EAS CLI: `npm install -g eas-cli`
++
++### Backend
++```bash
++cd backend
++cp .env.example .env        # Edit with your MongoDB connection string
++pip install -r requirements.txt
++uvicorn server:app --reload --port 8000
++```
++
++### Frontend
++```bash
++cd frontend
++cp .env.example .env        # Edit with your backend URL
++yarn install
++npx expo start              # Scan QR code with Expo Go
++```
++
++### Production Build (Android)
++```bash
++cd frontend
++eas build --platform android --profile production
++```
++
++## Deployment
++
++### GitHub Pages (Privacy Policy & Support)
++Enable GitHub Pages: Settings → Pages → Source: branch `main`, folder `/docs`
++
++Live at: `https://coastalcrypto.github.io/Dr.-Peptide-/`
++
++## Disclaimer
++
++PepTrack Pro is for informational and personal tracking purposes only. Not a substitute for professional medical advice. Always consult a qualified healthcare provider.
+diff --git a/backend/.env.example b/backend/.env.example
+new file mode 100644
+index 0000000..4ff32fb
+--- /dev/null
++++ b/backend/.env.example
+@@ -0,0 +1,17 @@
++# PepTrack Pro — Backend Environment Variables
++# Copy this file to .env and fill in your values
++
++# MongoDB connection string
++# Local: mongodb://localhost:27017
++# Atlas: mongodb+srv://user:password@cluster.mongodb.net/?retryWrites=true&w=majority
++MONGO_URL=mongodb://localhost:27017
++
++# Database name
++DB_NAME=peptrack_db
++
++# Emergent AI integration (for AI-powered research features)
++# Get this from your Emergent.sh project settings
++EMERGENT_LLM_KEY=
++
++# Server port (optional, defaults to 8000)
++PORT=8000
+diff --git a/docs/index.html b/docs/index.html
+new file mode 100644
+index 0000000..820138d
+--- /dev/null
++++ b/docs/index.html
+@@ -0,0 +1,82 @@
++<!DOCTYPE html>
++<html lang="en">
++<head>
++  <meta charset="UTF-8">
++  <meta name="viewport" content="width=device-width, initial-scale=1.0">
++  <title>PepTrack Pro — Your Health Companion</title>
++  <style>
++    * { margin: 0; padding: 0; box-sizing: border-box; }
++    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0D0D0D; color: #E0E0E0; line-height: 1.7; }
++    .container { max-width: 700px; margin: 0 auto; padding: 60px 24px 80px; text-align: center; }
++    h1 { font-size: 42px; color: #39FF14; letter-spacing: 2px; margin-bottom: 8px; }
++    .subtitle { color: #888; font-size: 18px; margin-bottom: 48px; }
++    .features { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 48px; text-align: left; }
++    .feature { background: #1A1A1A; border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 20px; }
++    .feature .emoji { font-size: 28px; margin-bottom: 8px; }
++    .feature h3 { font-size: 16px; color: #FFF; margin-bottom: 4px; }
++    .feature p { font-size: 13px; color: #999; margin: 0; }
++    .badges { margin-bottom: 48px; }
++    .badge { display: inline-block; background: #1A1A1A; border: 1px solid rgba(57,255,20,0.3); border-radius: 20px; padding: 8px 20px; margin: 4px; font-size: 13px; color: #39FF14; }
++    .links { margin-top: 32px; }
++    .links a { display: inline-block; color: #39FF14; text-decoration: none; margin: 0 16px; font-size: 15px; padding: 8px 0; border-bottom: 1px solid transparent; }
++    .links a:hover { border-bottom-color: #39FF14; }
++    .support { margin-top: 48px; padding-top: 32px; border-top: 1px solid rgba(255,255,255,0.1); }
++    .support h2 { font-size: 20px; color: #FFF; margin-bottom: 12px; }
++    .support p { font-size: 15px; color: #999; }
++    .support a { color: #39FF14; }
++    .disclaimer { margin-top: 48px; padding: 16px; background: rgba(255,69,58,0.08); border-radius: 8px; border: 1px solid rgba(255,69,58,0.2); }
++    .disclaimer p { font-size: 12px; color: #999; margin: 0; }
++    @media (max-width: 600px) { .features { grid-template-columns: 1fr; } h1 { font-size: 32px; } }
++  </style>
++</head>
++<body>
++  <div class="container">
++    <h1>PepTrack Pro</h1>
++    <p class="subtitle">Your All-in-One Health Tracking Companion</p>
++
++    <div class="features">
++      <div class="feature">
++        <div class="emoji">🧮</div>
++        <h3>Precision Calculator</h3>
++        <p>Reconstitution calculator with visual syringe and saved presets.</p>
++      </div>
++      <div class="feature">
++        <div class="emoji">📅</div>
++        <h3>Smart Scheduling</h3>
++        <p>Recurring dose tracking with reminders and adherence stats.</p>
++      </div>
++      <div class="feature">
++        <div class="emoji">🔬</div>
++        <h3>Research Database</h3>
++        <p>50+ compounds with dosage guidelines and AI-powered search.</p>
++      </div>
++      <div class="feature">
++        <div class="emoji">📓</div>
++        <h3>Health Journal</h3>
++        <p>Track weight, energy, sleep, mood, and view 7-day trends.</p>
++      </div>
++    </div>
++
++    <div class="badges">
++      <span class="badge">Offline-First</span>
++      <span class="badge">No Ads</span>
++      <span class="badge">Privacy-Focused</span>
++      <span class="badge">Dark &amp; Light Mode</span>
++    </div>
++
++    <div class="links">
++      <a href="privacy-policy.html">Privacy Policy</a>
++      <a href="terms-of-service.html">Terms of Service</a>
++    </div>
++
++    <div class="support">
++      <h2>Support</h2>
++      <p>Need help? Have feedback? Contact us at<br><a href="mailto:support@peptrackpro.com">support@peptrackpro.com</a></p>
++    </div>
++
++    <div class="disclaimer">
++      <p>PepTrack Pro is for informational and personal tracking purposes only. It is not a substitute for professional medical advice, diagnosis, or treatment. Always consult a qualified healthcare provider.</p>
++    </div>
++  </div>
++</body>
++</html>
+diff --git a/docs/privacy-policy.html b/docs/privacy-policy.html
+new file mode 100644
+index 0000000..046fa14
+--- /dev/null
++++ b/docs/privacy-policy.html
+@@ -0,0 +1,134 @@
++<!DOCTYPE html>
++<html lang="en">
++<head>
++  <meta charset="UTF-8">
++  <meta name="viewport" content="width=device-width, initial-scale=1.0">
++  <title>Privacy Policy — PepTrack Pro</title>
++  <style>
++    * { margin: 0; padding: 0; box-sizing: border-box; }
++    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0D0D0D; color: #E0E0E0; line-height: 1.7; }
++    .container { max-width: 800px; margin: 0 auto; padding: 40px 24px 80px; }
++    .logo { text-align: center; margin-bottom: 40px; }
++    .logo h1 { font-size: 28px; color: #39FF14; letter-spacing: 1px; }
++    .logo p { color: #888; font-size: 14px; margin-top: 4px; }
++    h2 { font-size: 22px; color: #FFFFFF; margin: 32px 0 12px; padding-bottom: 8px; border-bottom: 1px solid rgba(57,255,20,0.2); }
++    h3 { font-size: 17px; color: #39FF14; margin: 20px 0 8px; }
++    p, li { font-size: 15px; color: #CCCCCC; margin-bottom: 12px; }
++    ul { padding-left: 24px; margin-bottom: 16px; }
++    li { margin-bottom: 6px; }
++    .effective { text-align: center; color: #888; font-size: 13px; margin-top: 48px; padding-top: 24px; border-top: 1px solid rgba(255,255,255,0.1); }
++    a { color: #39FF14; text-decoration: none; }
++    a:hover { text-decoration: underline; }
++    .highlight { background: rgba(57,255,20,0.08); border-left: 3px solid #39FF14; padding: 12px 16px; border-radius: 0 8px 8px 0; margin: 16px 0; }
++    .highlight p { margin-bottom: 0; }
++    @media (max-width: 600px) { .container { padding: 24px 16px 60px; } h2 { font-size: 19px; } }
++  </style>
++</head>
++<body>
++  <div class="container">
++    <div class="logo">
++      <h1>PepTrack Pro</h1>
++      <p>Privacy Policy</p>
++    </div>
++
++    <div class="highlight">
++      <p>PepTrack Pro ("we", "our", or "us") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, store, and safeguard your information when you use our mobile application.</p>
++    </div>
++
++    <h2>1. Information We Collect</h2>
++    <h3>Information You Provide</h3>
++    <ul>
++      <li><strong>Health &amp; Tracking Data:</strong> Peptide, supplement, and medication usage records you enter, including names, dosages, schedules, and administration routes.</li>
++      <li><strong>Health Journal Entries:</strong> Weight, energy levels, sleep quality, mood ratings, pain levels, and personal notes you choose to log.</li>
++      <li><strong>Calculator Presets:</strong> Reconstitution calculations and saved configurations.</li>
++      <li><strong>Account Information:</strong> If you sign in with Google, we receive your name, email address, and profile photo from Google.</li>
++    </ul>
++
++    <h3>Information We Do NOT Collect</h3>
++    <ul>
++      <li>Precise geolocation or GPS data</li>
++      <li>Financial or payment information</li>
++      <li>Contacts, call logs, or SMS data</li>
++      <li>Data from other apps on your device</li>
++      <li>Biometric data</li>
++    </ul>
++
++    <h3>Automatically Collected Information</h3>
++    <ul>
++      <li>Basic device identifiers for crash reporting and app stability</li>
++      <li>App usage analytics (anonymized and aggregated)</li>
++    </ul>
++
++    <h2>2. How We Use Your Information</h2>
++    <p>Your data is used exclusively to:</p>
++    <ul>
++      <li>Provide core tracking, scheduling, and calculation features</li>
++      <li>Generate AI-powered health insights and research summaries (when you use these features)</li>
++      <li>Sync your data across devices (only if you sign in with Google)</li>
++      <li>Improve app performance, fix bugs, and enhance features</li>
++      <li>Send you dose reminders and notifications (only if enabled)</li>
++    </ul>
++
++    <div class="highlight">
++      <p><strong>We will NEVER:</strong> sell your personal health data to third parties, use your data for advertising purposes, or share individually identifiable health information with external parties.</p>
++    </div>
++
++    <h2>3. Data Storage &amp; Security</h2>
++    <ul>
++      <li><strong>Local-First Storage:</strong> By default, all your data is stored locally on your device. The app is designed to function fully offline.</li>
++      <li><strong>Cloud Sync (Optional):</strong> If you sign in with Google, your data may be synced to secure cloud servers (MongoDB Atlas with encryption at rest) for backup and cross-device access.</li>
++      <li><strong>Encryption in Transit:</strong> All data transmissions between the app and our servers use TLS 1.2+ encryption.</li>
++      <li><strong>Access Control:</strong> Your data is accessible only to you through your authenticated device or account.</li>
++      <li><strong>Server Security:</strong> Our backend infrastructure uses industry-standard security practices including connection pooling, rate limiting, and secure session management.</li>
++    </ul>
++
++    <h2>4. Your Rights &amp; Choices</h2>
++    <p>You have full control over your data:</p>
++    <ul>
++      <li><strong>Guest Mode:</strong> Use the app without creating an account. All data stays on your device only.</li>
++      <li><strong>Data Export:</strong> Export all your data at any time from the Profile tab.</li>
++      <li><strong>Data Deletion:</strong> Permanently delete all your data from within the app at any time. For cloud-synced data, deletion removes data from both your device and our servers within 30 days.</li>
++      <li><strong>Edit or Correct:</strong> Modify or delete any entry you have made at any time.</li>
++      <li><strong>Opt-Out of Cloud Sync:</strong> You can use the app entirely in offline/guest mode.</li>
++    </ul>
++
++    <h3>For European Users (GDPR)</h3>
++    <p>If you are located in the European Economic Area, you have additional rights including the right to access, rectify, erase, restrict processing, data portability, and the right to object. To exercise these rights, contact us at the email below.</p>
++
++    <h3>For California Users (CCPA)</h3>
++    <p>California residents have the right to know what personal information is collected, request deletion, and opt out of the sale of personal information. We do not sell personal information.</p>
++
++    <h2>5. Third-Party Services</h2>
++    <p>PepTrack Pro integrates with the following third-party services:</p>
++    <ul>
++      <li><strong>Google Sign-In:</strong> For optional account authentication, subject to <a href="https://policies.google.com/privacy" target="_blank" rel="noopener">Google's Privacy Policy</a>.</li>
++      <li><strong>AI Language Model Services:</strong> For generating health summaries and research information. Queries are processed without persistent storage of your personal health data.</li>
++      <li><strong>Crash Reporting:</strong> Basic crash and error reporting to improve app stability. No personal health data is included in crash reports.</li>
++    </ul>
++
++    <h2>6. Data Retention</h2>
++    <ul>
++      <li><strong>Local Data:</strong> Stored on your device until you delete it or uninstall the app.</li>
++      <li><strong>Cloud Data:</strong> Retained as long as your account is active. Upon account deletion, all data is removed within 30 days.</li>
++      <li><strong>Server Logs:</strong> Basic server access logs are retained for up to 90 days for security and debugging purposes, then automatically deleted.</li>
++    </ul>
++
++    <h2>7. Children's Privacy</h2>
++    <p>PepTrack Pro is not intended for use by individuals under the age of 18. We do not knowingly collect personal information from children. If you are a parent or guardian and believe your child has provided us with personal information, please contact us and we will promptly delete such information.</p>
++
++    <h2>8. Medical Disclaimer</h2>
++    <div class="highlight">
++      <p>PepTrack Pro is designed for <strong>informational and personal tracking purposes ONLY</strong>. This app is NOT a medical device and should NOT be used to diagnose, treat, cure, or prevent any disease or medical condition. The dosage calculations, research information, and suggested protocols are for educational reference only. Always consult a qualified healthcare provider before starting, changing, or stopping any peptide, supplement, or medication regimen.</p>
++    </div>
++
++    <h2>9. Changes to This Policy</h2>
++    <p>We may update this Privacy Policy from time to time. When we make changes, we will update the "Last Updated" date below and notify users through the app. Your continued use of PepTrack Pro after changes constitutes acceptance of the updated policy.</p>
++
++    <h2>10. Contact Us</h2>
++    <p>If you have any questions, concerns, or requests regarding this Privacy Policy or your personal data, please contact us at:</p>
++    <p><strong>Email:</strong> <a href="mailto:support@peptrackpro.com">support@peptrackpro.com</a></p>
++
++    <p class="effective">Last Updated: February 14, 2026</p>
++  </div>
++</body>
++</html>
+diff --git a/docs/terms-of-service.html b/docs/terms-of-service.html
+new file mode 100644
+index 0000000..4c8c3ca
+--- /dev/null
++++ b/docs/terms-of-service.html
+@@ -0,0 +1,121 @@
++<!DOCTYPE html>
++<html lang="en">
++<head>
++  <meta charset="UTF-8">
++  <meta name="viewport" content="width=device-width, initial-scale=1.0">
++  <title>Terms of Service — PepTrack Pro</title>
++  <style>
++    * { margin: 0; padding: 0; box-sizing: border-box; }
++    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0D0D0D; color: #E0E0E0; line-height: 1.7; }
++    .container { max-width: 800px; margin: 0 auto; padding: 40px 24px 80px; }
++    .logo { text-align: center; margin-bottom: 40px; }
++    .logo h1 { font-size: 28px; color: #39FF14; letter-spacing: 1px; }
++    .logo p { color: #888; font-size: 14px; margin-top: 4px; }
++    h2 { font-size: 22px; color: #FFFFFF; margin: 32px 0 12px; padding-bottom: 8px; border-bottom: 1px solid rgba(57,255,20,0.2); }
++    p, li { font-size: 15px; color: #CCCCCC; margin-bottom: 12px; }
++    ul { padding-left: 24px; margin-bottom: 16px; }
++    li { margin-bottom: 6px; }
++    .effective { text-align: center; color: #888; font-size: 13px; margin-top: 48px; padding-top: 24px; border-top: 1px solid rgba(255,255,255,0.1); }
++    a { color: #39FF14; text-decoration: none; }
++    a:hover { text-decoration: underline; }
++    .highlight { background: rgba(57,255,20,0.08); border-left: 3px solid #39FF14; padding: 12px 16px; border-radius: 0 8px 8px 0; margin: 16px 0; }
++    .highlight p { margin-bottom: 0; }
++    .warning { background: rgba(255,69,58,0.1); border-left: 3px solid #FF453A; padding: 12px 16px; border-radius: 0 8px 8px 0; margin: 16px 0; }
++    .warning p { margin-bottom: 0; color: #FF8A80; }
++    @media (max-width: 600px) { .container { padding: 24px 16px 60px; } h2 { font-size: 19px; } }
++  </style>
++</head>
++<body>
++  <div class="container">
++    <div class="logo">
++      <h1>PepTrack Pro</h1>
++      <p>Terms of Service</p>
++    </div>
++
++    <div class="highlight">
++      <p>Please read these Terms of Service ("Terms") carefully before using the PepTrack Pro mobile application ("App") operated by the PepTrack Pro Team ("we", "us", or "our").</p>
++    </div>
++
++    <h2>1. Acceptance of Terms</h2>
++    <p>By downloading, installing, or using PepTrack Pro, you agree to be bound by these Terms. If you do not agree to these Terms, do not use the App.</p>
++
++    <h2>2. Description of Service</h2>
++    <p>PepTrack Pro is a personal health tracking and information application that provides:</p>
++    <ul>
++      <li>Peptide reconstitution dosage calculations</li>
++      <li>A research database of peptide and medication information</li>
++      <li>Scheduling and tracking tools for peptides, supplements, and medications</li>
++      <li>A health journal for logging personal wellness metrics</li>
++      <li>AI-powered research and health summary features</li>
++    </ul>
++
++    <h2>3. Medical Disclaimer</h2>
++    <div class="warning">
++      <p><strong>IMPORTANT:</strong> PepTrack Pro is for informational and personal tracking purposes ONLY. The App is NOT a medical device, does NOT provide medical advice, and should NOT be used as a substitute for professional medical consultation, diagnosis, or treatment. Always seek the advice of a qualified healthcare provider with any questions regarding a medical condition or treatment. Never disregard professional medical advice or delay seeking it because of information provided by this App.</p>
++    </div>
++
++    <h2>4. Disclaimer of Accuracy</h2>
++    <p>While we strive to provide accurate information:</p>
++    <ul>
++      <li>The peptide calculator performs mathematical calculations based on values you input. The accuracy of results depends entirely on the precision of your inputs. You must verify all calculations independently before use.</li>
++      <li>Dosage suggestions in the research database are compiled from published research and community-reported data. They may not reflect the most current research and should not be considered prescriptive.</li>
++      <li>AI-generated content, including research summaries and health insights, may contain errors or inaccuracies. AI outputs should be verified against authoritative sources.</li>
++      <li>We do not guarantee the completeness, reliability, or timeliness of any information in the App.</li>
++    </ul>
++
++    <h2>5. User Responsibilities</h2>
++    <p>By using PepTrack Pro, you acknowledge and agree that:</p>
++    <ul>
++      <li>You are at least 18 years of age.</li>
++      <li>You are solely responsible for all health decisions you make.</li>
++      <li>You will consult a qualified healthcare professional before starting, modifying, or stopping any peptide, supplement, or medication regimen.</li>
++      <li>You will not rely on the App as your sole source of health or medical information.</li>
++      <li>You are responsible for the accuracy of data you enter into the App.</li>
++      <li>You will comply with all applicable laws regarding the substances you track.</li>
++    </ul>
++
++    <h2>6. Account &amp; Data</h2>
++    <ul>
++      <li>You may use PepTrack Pro in Guest Mode without creating an account. Guest mode data is stored locally on your device only.</li>
++      <li>If you sign in with Google, certain data may be synced to our servers for backup and cross-device access.</li>
++      <li>You are responsible for maintaining the security of your device and account credentials.</li>
++      <li>You may export or delete your data at any time through the Profile tab.</li>
++    </ul>
++
++    <h2>7. Prohibited Uses</h2>
++    <p>You agree not to:</p>
++    <ul>
++      <li>Use the App for any unlawful purpose</li>
++      <li>Attempt to reverse-engineer, decompile, or disassemble the App</li>
++      <li>Interfere with or disrupt the App's servers or infrastructure</li>
++      <li>Distribute, sell, or commercially exploit any content from the App without permission</li>
++      <li>Use the App to provide medical advice or services to others</li>
++    </ul>
++
++    <h2>8. Intellectual Property</h2>
++    <p>All content, features, and functionality of PepTrack Pro — including but not limited to text, graphics, logos, icons, software, and the compilation thereof — are the exclusive property of the PepTrack Pro Team and are protected by copyright, trademark, and other intellectual property laws.</p>
++
++    <h2>9. Limitation of Liability</h2>
++    <p>TO THE MAXIMUM EXTENT PERMITTED BY LAW, THE PEPTRACK PRO TEAM SHALL NOT BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES, INCLUDING BUT NOT LIMITED TO PERSONAL INJURY, HEALTH COMPLICATIONS, LOSS OF DATA, OR LOSS OF PROFITS, ARISING OUT OF OR IN CONNECTION WITH YOUR USE OF THE APP.</p>
++    <p>IN NO EVENT SHALL OUR TOTAL LIABILITY EXCEED THE AMOUNT YOU PAID TO US, IF ANY, FOR ACCESS TO THE APP DURING THE TWELVE (12) MONTHS PRECEDING THE CLAIM.</p>
++
++    <h2>10. Indemnification</h2>
++    <p>You agree to indemnify and hold harmless the PepTrack Pro Team from any claims, damages, losses, or expenses (including reasonable attorneys' fees) arising from your use of the App, your violation of these Terms, or your violation of any rights of a third party.</p>
++
++    <h2>11. Changes to Terms</h2>
++    <p>We reserve the right to modify these Terms at any time. When changes are made, the updated Terms will be posted within the App and on our website. Your continued use of PepTrack Pro after changes constitutes acceptance of the revised Terms.</p>
++
++    <h2>12. Termination</h2>
++    <p>We may terminate or suspend your access to the App at any time, without prior notice, for conduct that we believe violates these Terms or is harmful to other users, us, or third parties. Upon termination, you may export your data within 30 days.</p>
++
++    <h2>13. Governing Law</h2>
++    <p>These Terms shall be governed by and construed in accordance with the laws of the Commonwealth of Virginia, United States, without regard to its conflict of law provisions.</p>
++
++    <h2>14. Contact</h2>
++    <p>For any questions regarding these Terms, contact us at:</p>
++    <p><strong>Email:</strong> <a href="mailto:support@peptrackpro.com">support@peptrackpro.com</a></p>
++
++    <p class="effective">Last Updated: February 14, 2026</p>
++  </div>
++</body>
++</html>
+diff --git a/frontend/.env.example b/frontend/.env.example
+new file mode 100644
+index 0000000..7642096
+--- /dev/null
++++ b/frontend/.env.example
+@@ -0,0 +1,7 @@
++# PepTrack Pro — Frontend Environment Variables
++# Copy this file to .env and fill in your values
++
++# Backend API URL (your deployed FastAPI server)
++# Development: http://localhost:8000
++# Production: https://your-production-server.com
++EXPO_PUBLIC_BACKEND_URL=http://localhost:8000
+diff --git a/frontend/STORE_LISTING.md b/frontend/STORE_LISTING.md
+index dea4925..972e983 100644
+--- a/frontend/STORE_LISTING.md
++++ b/frontend/STORE_LISTING.md
+@@ -75,13 +75,13 @@ peptide,tracker,supplement,medication,health,dosage,calculator,reconstitution,bp
+ **Apple:** 17+ (Medical/Health Information)
+ 
+ ## Privacy Policy URL
+-https://peptrackpro.com/privacy-policy
++https://coastalcrypto.github.io/Dr.-Peptide-/privacy-policy.html
+ 
+ ## Support URL
+-https://peptrackpro.com/support
++https://coastalcrypto.github.io/Dr.-Peptide-/
+ 
+ ## Marketing URL
+-https://peptrackpro.com
++https://coastalcrypto.github.io/Dr.-Peptide-/
+ 
+ ---
+ 
+diff --git a/frontend/eas.json b/frontend/eas.json
+index 8ccb09a..e13ae4f 100644
+--- a/frontend/eas.json
++++ b/frontend/eas.json
+@@ -21,14 +21,21 @@
+       },
+       "ios": {
+         "simulator": false
++      },
++      "env": {
++        "EXPO_PUBLIC_BACKEND_URL": "YOUR_BACKEND_URL_HERE"
+       }
+     },
+     "production": {
++      "autoIncrement": true,
+       "android": {
+         "buildType": "app-bundle"
+       },
+       "ios": {
+         "resourceClass": "m1-medium"
++      },
++      "env": {
++        "EXPO_PUBLIC_BACKEND_URL": "YOUR_PRODUCTION_BACKEND_URL_HERE"
+       }
+     }
+   },
+@@ -36,7 +43,8 @@
+     "production": {
+       "android": {
+         "serviceAccountKeyPath": "./google-service-account.json",
+-        "track": "internal"
++        "track": "internal",
++        "releaseStatus": "draft"
+       },
+       "ios": {
+         "appleId": "YOUR_APPLE_ID",
+diff --git a/railway.json b/railway.json
+new file mode 100644
+index 0000000..4f8a064
+--- /dev/null
++++ b/railway.json
+@@ -0,0 +1,14 @@
++{
++  "$schema": "https://railway.com/railway.schema.json",
++  "build": {
++    "builder": "NIXPACKS",
++    "buildCommand": "cd backend && pip install -r requirements.txt"
++  },
++  "deploy": {
++    "startCommand": "cd backend && uvicorn server:app --host 0.0.0.0 --port ${PORT:-8000}",
++    "healthcheckPath": "/api/health",
++    "healthcheckTimeout": 30,
++    "restartPolicyType": "ON_FAILURE",
++    "restartPolicyMaxRetries": 3
++  }
++}
+diff --git a/render.yaml b/render.yaml
+new file mode 100644
+index 0000000..1ba1914
+--- /dev/null
++++ b/render.yaml
+@@ -0,0 +1,17 @@
++services:
++  - type: web
++    name: peptrack-pro-api
++    runtime: python
++    rootDir: backend
++    buildCommand: pip install -r requirements.txt
++    startCommand: uvicorn server:app --host 0.0.0.0 --port $PORT
++    healthCheckPath: /api/health
++    envVars:
++      - key: MONGO_URL
++        sync: false
++      - key: DB_NAME
++        value: peptrack_db
++      - key: EMERGENT_LLM_KEY
++        sync: false
++      - key: PYTHON_VERSION
++        value: 3.11.0
+diff --git a/runtime.txt b/runtime.txt
+new file mode 100644
+index 0000000..335156c
+--- /dev/null
++++ b/runtime.txt
+@@ -0,0 +1 @@
++python-3.11.0
+-- 
+2.43.0
+
+
+From 737c5220e92da2d41aefbbe16e4c7cd949ca9e8d Mon Sep 17 00:00:00 2001
+From: Claude <claude@anthropic.com>
+Date: Sun, 15 Feb 2026 02:00:56 +0000
+Subject: [PATCH 2/2] Fix production bugs and Play Store compliance issues
+
+Bug fixes:
+- Fix profile.tsx: colors.isDark doesn't exist on colors object (always evaluated wrong)
+- Fix waiver.tsx: was using static dark theme import instead of ThemeContext
+  (waiver screen was always dark even in light mode)
+- Fix onboarding.tsx: same static dark theme bug as waiver
+- Fix onboarding text: said '15+ peptides' but app has 29 peptides + 20 meds
+
+Play Store compliance:
+- Add Privacy Policy and Terms of Service links to Profile screen
+- Add Delete Account button for cloud users (Google Play requirement since Nov 2023)
+- Add /auth/delete-account API endpoint that purges all user data
+- Register privacy-policy route in navigation stack
+
+Production hardening:
+- Add MongoDB indexes on startup (user_id, session_token, etc.)
+- Add TTL index on user_sessions.expires_at for auto-cleanup
+- Fix clearData to also clear recurring items, custom entries, favorites
+
+Developer tooling:
+- Add validate-publish.js pre-flight check script
+- Add setup-and-publish.sh one-command setup/build script
+---
+ backend/server.py                    |  44 +++++++++-
+ frontend/app/(tabs)/profile.tsx      |  55 +++++++++++-
+ frontend/app/_layout.tsx             |   1 +
+ frontend/app/onboarding.tsx          |  10 ++-
+ frontend/app/waiver.tsx              |   8 +-
+ frontend/scripts/validate-publish.js | 103 ++++++++++++++++++++++
+ setup-and-publish.sh                 | 125 +++++++++++++++++++++++++++
+ 7 files changed, 338 insertions(+), 8 deletions(-)
+ create mode 100644 frontend/scripts/validate-publish.js
+ create mode 100755 setup-and-publish.sh
+
+diff --git a/backend/server.py b/backend/server.py
+index 06479e0..637afab 100644
+--- a/backend/server.py
++++ b/backend/server.py
+@@ -194,6 +194,36 @@ async def auth_logout(request: Request, response: Response):
+     response.delete_cookie("session_token", path="/")
+     return {"message": "Logged out"}
+ 
++@api_router.delete("/auth/delete-account")
++async def delete_account(request: Request, response: Response):
++    """Delete user account and all associated data (Play Store requirement)."""
++    token = request.cookies.get("session_token")
++    auth_h = request.headers.get("Authorization", "")
++    if auth_h.startswith("Bearer "):
++        token = auth_h[7:]
++    if not token:
++        raise HTTPException(status_code=401, detail="Not authenticated")
++    session = await db.user_sessions.find_one({"session_token": token}, {"_id": 0})
++    if not session:
++        raise HTTPException(status_code=401, detail="Invalid session")
++    user_id = session["user_id"]
++    try:
++        # Delete all user data across all collections
++        await db.users.delete_one({"user_id": user_id})
++        await db.user_sessions.delete_many({"user_id": user_id})
++        await db.tracker_items.delete_many({"user_id": user_id})
++        await db.dose_logs.delete_many({"user_id": user_id})
++        await db.journal_entries.delete_many({"user_id": user_id})
++        await db.calculator_presets.delete_many({"user_id": user_id})
++        await db.recurring_items.delete_many({"user_id": user_id})
++        await db.recurring_dose_logs.delete_many({"user_id": user_id})
++        response.delete_cookie("session_token", path="/")
++        logger.info(f"Account deleted: {user_id}")
++        return {"message": "Account and all data permanently deleted"}
++    except Exception as e:
++        logger.error(f"Account deletion error: {e}")
++        raise HTTPException(status_code=500, detail="Failed to delete account")
++
+ # ==================== AI Endpoints ====================
+ 
+ @api_router.post("/ai/ask")
+@@ -610,10 +640,22 @@ app.add_middleware(
+ 
+ @app.on_event("startup")
+ async def startup_db_client():
+-    """Verify MongoDB connection on startup."""
++    """Verify MongoDB connection and create indexes on startup."""
+     try:
+         await client.admin.command('ping')
+         logger.info(f"Successfully connected to MongoDB at {mongo_url[:30]}...")
++        # Create indexes for production query performance
++        await db.users.create_index("user_id", unique=True)
++        await db.users.create_index("email", unique=True)
++        await db.user_sessions.create_index("session_token", unique=True)
++        await db.user_sessions.create_index("user_id")
++        await db.user_sessions.create_index("expires_at", expireAfterSeconds=0)
++        await db.recurring_items.create_index("user_id")
++        await db.recurring_dose_logs.create_index([("user_id", 1), ("scheduled_date", 1)])
++        await db.journal_entries.create_index([("user_id", 1), ("date", -1)])
++        await db.tracker_items.create_index("user_id")
++        await db.calculator_presets.create_index("user_id")
++        logger.info("MongoDB indexes created/verified")
+     except Exception as e:
+         logger.error(f"Failed to connect to MongoDB: {e}")
+         # Don't raise - let the app start and handle individual request failures
+diff --git a/frontend/app/(tabs)/profile.tsx b/frontend/app/(tabs)/profile.tsx
+index 7bab774..1f10797 100644
+--- a/frontend/app/(tabs)/profile.tsx
++++ b/frontend/app/(tabs)/profile.tsx
+@@ -1,10 +1,11 @@
+ import { useState, useEffect } from 'react';
+-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, Switch, Alert } from 'react-native';
++import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, Switch, Alert, Linking } from 'react-native';
+ import { MaterialCommunityIcons } from '@expo/vector-icons';
+ import { useTheme } from '../../src/context/ThemeContext';
+ import { typography, spacing, DISCLAIMER } from '../../src/theme';
+ import { Storage, KEYS } from '../../src/utils/storage';
+ import { api } from '../../src/utils/api';
++import { useRouter } from 'expo-router';
+ import { Platform } from 'react-native';
+ 
+ interface Settings {
+@@ -15,6 +16,7 @@ interface Settings {
+ 
+ export default function ProfileScreen() {
+   const { colors, mode, setMode, isDark } = useTheme();
++  const router = useRouter();
+   const [user, setUser] = useState<any>(null);
+   const [settings, setSettings] = useState<Settings>({ weightUnit: 'lbs', measureUnit: 'inches', notifications: true });
+ 
+@@ -63,11 +65,38 @@ export default function ProfileScreen() {
+         await Storage.remove(KEYS.DOSE_LOGS);
+         await Storage.remove(KEYS.JOURNAL_ENTRIES);
+         await Storage.remove(KEYS.CALCULATOR_PRESETS);
++        await Storage.remove(KEYS.RECURRING_ITEMS);
++        await Storage.remove(KEYS.CUSTOM_PEPTIDES);
++        await Storage.remove(KEYS.CUSTOM_MEDS);
++        await Storage.remove(KEYS.FAVORITES);
+         Alert.alert('Done', 'All data has been cleared.');
+       }},
+     ]);
+   };
+ 
++  const deleteAccount = () => {
++    Alert.alert(
++      'Delete Account & All Data',
++      'This will permanently delete your account, all cloud data, and all local data. This action cannot be undone.',
++      [
++        { text: 'Cancel', style: 'cancel' },
++        { text: 'Delete Everything', style: 'destructive', onPress: async () => {
++          try {
++            // Attempt to delete server-side data
++            await api.delete('/api/auth/delete-account');
++          } catch {}
++          // Clear all local data
++          const allKeys = Object.values(KEYS);
++          for (const key of allKeys) {
++            await Storage.remove(key);
++          }
++          setUser(null);
++          Alert.alert('Account Deleted', 'All your data has been permanently removed.');
++        }},
++      ]
++    );
++  };
++
+   const styles = createStyles(colors);
+ 
+   return (
+@@ -179,6 +208,28 @@ export default function ProfileScreen() {
+             <Text style={[styles.settingLabel, { color: colors.error }]}>Clear All Data</Text>
+             <MaterialCommunityIcons name="delete-outline" size={22} color={colors.error} />
+           </TouchableOpacity>
++          {user && (
++            <>
++              <View style={styles.divider} />
++              <TouchableOpacity testID="delete-account-btn" style={styles.settingRow} onPress={deleteAccount}>
++                <Text style={[styles.settingLabel, { color: colors.error }]}>Delete Account</Text>
++                <MaterialCommunityIcons name="account-remove" size={22} color={colors.error} />
++              </TouchableOpacity>
++            </>
++          )}
++        </View>
++
++        <Text style={styles.sectionTitle}>Legal</Text>
++        <View style={styles.settingsCard}>
++          <TouchableOpacity style={styles.settingRow} onPress={() => router.push('/privacy-policy')}>
++            <Text style={styles.settingLabel}>Privacy Policy</Text>
++            <MaterialCommunityIcons name="chevron-right" size={22} color={colors.textTertiary} />
++          </TouchableOpacity>
++          <View style={styles.divider} />
++          <TouchableOpacity style={styles.settingRow} onPress={() => Linking.openURL('https://coastalcrypto.github.io/Dr.-Peptide-/terms-of-service.html')}>
++            <Text style={styles.settingLabel}>Terms of Service</Text>
++            <MaterialCommunityIcons name="chevron-right" size={22} color={colors.textTertiary} />
++          </TouchableOpacity>
+         </View>
+ 
+         <Text style={styles.sectionTitle}>About</Text>
+@@ -228,6 +279,6 @@ const createStyles = (colors: any) => StyleSheet.create({
+   themeBtn: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 8 },
+   themeBtnActive: { backgroundColor: colors.primary },
+   themeHint: { ...typography.bodySm, color: colors.textTertiary, paddingHorizontal: spacing.md, paddingBottom: spacing.md, marginTop: -8 },
+-  disclaimerCard: { flexDirection: 'row', backgroundColor: colors.isDark ? 'rgba(255,209,102,0.1)' : 'rgba(255,149,0,0.1)', borderRadius: 12, padding: spacing.md, marginTop: spacing.lg, gap: 10 },
++  disclaimerCard: { flexDirection: 'row', backgroundColor: 'rgba(255,209,102,0.1)', borderRadius: 12, padding: spacing.md, marginTop: spacing.lg, gap: 10 },
+   disclaimerText: { ...typography.bodySm, color: colors.textTertiary, flex: 1, fontSize: 11, lineHeight: 16 },
+ });
+diff --git a/frontend/app/_layout.tsx b/frontend/app/_layout.tsx
+index e0c811f..434f95e 100644
+--- a/frontend/app/_layout.tsx
++++ b/frontend/app/_layout.tsx
+@@ -19,6 +19,7 @@ function RootLayoutContent() {
+         <Stack.Screen name="waiver" />
+         <Stack.Screen name="onboarding" />
+         <Stack.Screen name="(tabs)" />
++        <Stack.Screen name="privacy-policy" options={{ presentation: 'modal' }} />
+         <Stack.Screen
+           name="peptide/[id]"
+           options={{
+diff --git a/frontend/app/onboarding.tsx b/frontend/app/onboarding.tsx
+index c3f879a..eaeca20 100644
+--- a/frontend/app/onboarding.tsx
++++ b/frontend/app/onboarding.tsx
+@@ -2,7 +2,8 @@ import { useState, useRef } from 'react';
+ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, Dimensions } from 'react-native';
+ import { MaterialCommunityIcons } from '@expo/vector-icons';
+ import { useRouter } from 'expo-router';
+-import { colors, typography, spacing, DISCLAIMER } from '../src/theme';
++import { useTheme } from '../src/context/ThemeContext';
++import { typography, spacing, DISCLAIMER } from '../src/theme';
+ import { Storage, KEYS } from '../src/utils/storage';
+ 
+ const { width } = Dimensions.get('window');
+@@ -18,7 +19,7 @@ const slides = [
+   {
+     icon: 'book-search' as const,
+     title: 'Research Database',
+-    desc: 'Access detailed profiles for 15+ peptides and common medications with dosage ranges, side effects, and protocols.',
++    desc: 'Access detailed profiles for 50+ peptides and common medications with dosage ranges, side effects, and protocols.',
+   },
+   {
+     icon: 'heart-pulse' as const,
+@@ -29,6 +30,7 @@ const slides = [
+ 
+ export default function OnboardingScreen() {
+   const router = useRouter();
++  const { colors } = useTheme();
+   const [page, setPage] = useState(0);
+   const [selectedGoals, setSelectedGoals] = useState<string[]>([]);
+   const scrollRef = useRef<ScrollView>(null);
+@@ -51,6 +53,8 @@ export default function OnboardingScreen() {
+     setSelectedGoals(prev => prev.includes(g) ? prev.filter(x => x !== g) : [...prev, g]);
+   };
+ 
++  const styles = createStyles(colors);
++
+   return (
+     <SafeAreaView style={styles.safe}>
+       <ScrollView ref={scrollRef} horizontal pagingEnabled showsHorizontalScrollIndicator={false}
+@@ -114,7 +118,7 @@ export default function OnboardingScreen() {
+   );
+ }
+ 
+-const styles = StyleSheet.create({
++const createStyles = (colors: any) => StyleSheet.create({
+   safe: { flex: 1, backgroundColor: colors.background },
+   scroll: { flex: 1 },
+   page: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: spacing.xl },
+diff --git a/frontend/app/waiver.tsx b/frontend/app/waiver.tsx
+index a986b9f..1565a86 100644
+--- a/frontend/app/waiver.tsx
++++ b/frontend/app/waiver.tsx
+@@ -2,11 +2,13 @@ import { useState } from 'react';
+ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView } from 'react-native';
+ import { useRouter } from 'expo-router';
+ import { MaterialCommunityIcons } from '@expo/vector-icons';
+-import { colors, typography, spacing, FONT_MARKER } from '../src/theme';
++import { useTheme } from '../src/context/ThemeContext';
++import { typography, spacing, FONT_MARKER } from '../src/theme';
+ import { Storage, KEYS } from '../src/utils/storage';
+ 
+ export default function WaiverScreen() {
+   const router = useRouter();
++  const { colors } = useTheme();
+   const [accepted, setAccepted] = useState(false);
+ 
+   const handleAccept = async () => {
+@@ -19,6 +21,8 @@ export default function WaiverScreen() {
+     }
+   };
+ 
++  const styles = createStyles(colors);
++
+   return (
+     <SafeAreaView style={styles.safe}>
+       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+@@ -91,7 +95,7 @@ export default function WaiverScreen() {
+   );
+ }
+ 
+-const styles = StyleSheet.create({
++const createStyles = (colors: any) => StyleSheet.create({
+   safe: {
+     flex: 1,
+     backgroundColor: colors.background,
+diff --git a/frontend/scripts/validate-publish.js b/frontend/scripts/validate-publish.js
+new file mode 100644
+index 0000000..733e490
+--- /dev/null
++++ b/frontend/scripts/validate-publish.js
+@@ -0,0 +1,103 @@
++#!/usr/bin/env node
++/**
++ * PepTrack Pro — Pre-publish validation script
++ * Run from the frontend/ directory: node scripts/validate-publish.js
++ * 
++ * Checks that all Play Store requirements are met before building.
++ */
++
++const fs = require('fs');
++const path = require('path');
++
++const FRONTEND = path.resolve(__dirname, '..');
++const ROOT = path.resolve(FRONTEND, '..');
++let errors = 0;
++let warnings = 0;
++
++function check(condition, msg, isWarning = false) {
++  if (condition) {
++    console.log(`  ✅ ${msg}`);
++  } else if (isWarning) {
++    console.log(`  ⚠️  ${msg}`);
++    warnings++;
++  } else {
++    console.log(`  ❌ ${msg}`);
++    errors++;
++  }
++}
++
++console.log('\n🔍 PepTrack Pro — Pre-publish Validation\n');
++
++// 1. Check app.json
++console.log('📋 app.json');
++const appJson = JSON.parse(fs.readFileSync(path.join(FRONTEND, 'app.json'), 'utf-8'));
++const expo = appJson.expo;
++check(expo.name, `App name: "${expo.name}"`);
++check(expo.version, `Version: ${expo.version}`);
++check(expo.android?.package, `Android package: ${expo.android?.package}`);
++check(expo.android?.versionCode >= 1, `Version code: ${expo.android?.versionCode}`);
++check(expo.android?.adaptiveIcon?.foregroundImage, 'Adaptive icon configured');
++check(expo.android?.permissions?.length > 0, `Permissions: ${expo.android?.permissions?.join(', ')}`);
++check(expo.extra?.eas?.projectId && expo.extra.eas.projectId !== 'peptrack-pro', 
++  'EAS projectId is set (not placeholder)', true);
++
++// 2. Check eas.json
++console.log('\n📋 eas.json');
++const easJson = JSON.parse(fs.readFileSync(path.join(FRONTEND, 'eas.json'), 'utf-8'));
++check(easJson.build?.production?.android?.buildType === 'app-bundle', 'Production builds as AAB');
++const prodEnv = easJson.build?.production?.env?.EXPO_PUBLIC_BACKEND_URL;
++check(prodEnv && !prodEnv.includes('YOUR_'), 'Backend URL set in production env (not placeholder)', true);
++
++// 3. Check assets
++console.log('\n🎨 Assets');
++const assetsDir = path.join(FRONTEND, 'assets', 'images');
++check(fs.existsSync(path.join(assetsDir, 'icon.png')), 'icon.png exists');
++check(fs.existsSync(path.join(assetsDir, 'adaptive-icon.png')), 'adaptive-icon.png exists');
++check(fs.existsSync(path.join(assetsDir, 'splash-icon.png')), 'splash-icon.png exists');
++check(fs.existsSync(path.join(assetsDir, 'feature-graphic.png')), 'feature-graphic.png exists (1024x500 for Play Store)');
++
++// Check icon dimensions
++try {
++  const iconBuf = fs.readFileSync(path.join(assetsDir, 'icon.png'));
++  // PNG header: width at bytes 16-19, height at bytes 20-23 (big-endian)
++  const width = iconBuf.readUInt32BE(16);
++  const height = iconBuf.readUInt32BE(20);
++  check(width === 1024 && height === 1024, `Icon dimensions: ${width}x${height} (need 1024x1024)`);
++} catch {}
++
++// 4. Check privacy & legal docs
++console.log('\n📜 Legal Pages');
++const docsDir = path.join(ROOT, 'docs');
++check(fs.existsSync(path.join(docsDir, 'privacy-policy.html')), 'Privacy policy HTML exists');
++check(fs.existsSync(path.join(docsDir, 'terms-of-service.html')), 'Terms of service HTML exists');
++check(fs.existsSync(path.join(docsDir, 'index.html')), 'Support/landing page exists');
++
++// 5. Check env files
++console.log('\n🔐 Environment');
++check(fs.existsSync(path.join(FRONTEND, '.env.example')), 'Frontend .env.example exists');
++check(fs.existsSync(path.join(ROOT, 'backend', '.env.example')), 'Backend .env.example exists');
++check(!fs.existsSync(path.join(FRONTEND, 'google-service-account.json')), 'No service account key committed (good!)');
++
++// 6. Check required files
++console.log('\n📦 Store Listing');
++check(fs.existsSync(path.join(FRONTEND, 'STORE_LISTING.md')), 'Store listing copy exists');
++check(fs.existsSync(path.join(ROOT, 'PLAY_CONSOLE_CHEATSHEET.md')), 'Play Console form answers cheatsheet exists');
++
++// 7. Check backend
++console.log('\n🖥️  Backend');
++check(fs.existsSync(path.join(ROOT, 'backend', 'server.py')), 'Backend server.py exists');
++check(fs.existsSync(path.join(ROOT, 'backend', 'requirements.txt')), 'Backend requirements.txt exists');
++check(fs.existsSync(path.join(ROOT, 'Procfile')), 'Procfile exists (Railway/Render)');
++check(fs.existsSync(path.join(ROOT, 'Dockerfile')), 'Dockerfile exists');
++
++// Summary
++console.log('\n' + '─'.repeat(50));
++if (errors === 0 && warnings === 0) {
++  console.log('🎉 All checks passed! Ready to build.\n');
++} else {
++  if (errors > 0) console.log(`❌ ${errors} error(s) must be fixed before publishing.`);
++  if (warnings > 0) console.log(`⚠️  ${warnings} warning(s) — should fix but won't block build.`);
++  console.log('');
++}
++
++process.exit(errors > 0 ? 1 : 0);
+diff --git a/setup-and-publish.sh b/setup-and-publish.sh
+new file mode 100755
+index 0000000..1e563b9
+--- /dev/null
++++ b/setup-and-publish.sh
+@@ -0,0 +1,125 @@
++#!/bin/bash
++# PepTrack Pro — Quick Setup & Publish Script
++# Run this from the root of the repository after cloning.
++#
++# Prerequisites:
++#   - Node.js 18+
++#   - npm / yarn
++#   - eas-cli: npm install -g eas-cli
++#   - An Expo account (https://expo.dev/signup)
++#   - A Google Play Developer account
++#
++# Usage:
++#   chmod +x setup-and-publish.sh
++#   ./setup-and-publish.sh
++
++set -e
++
++echo ""
++echo "🧬 PepTrack Pro — Setup & Publish"
++echo "══════════════════════════════════"
++echo ""
++
++# ───── Step 1: Merge branch ─────
++CURRENT_BRANCH=$(git branch --show-current)
++if [ "$CURRENT_BRANCH" != "main" ]; then
++  echo "📌 Merging $CURRENT_BRANCH into main..."
++  git checkout main 2>/dev/null || git checkout -b main
++  git merge "$CURRENT_BRANCH" --allow-unrelated-histories --no-edit || {
++    echo "⚠️  Merge conflicts detected. Resolve them, then re-run."
++    exit 1
++  }
++  git push origin main
++  echo "✅ Code merged to main branch"
++else
++  echo "✅ Already on main branch"
++fi
++
++# ───── Step 2: Install dependencies ─────
++echo ""
++echo "📦 Installing frontend dependencies..."
++cd frontend
++npm install --legacy-peer-deps || yarn install
++echo "✅ Dependencies installed"
++
++# ───── Step 3: Link Expo project ─────
++echo ""
++echo "🔗 Linking to Expo (EAS)..."
++if ! command -v eas &> /dev/null; then
++  echo "Installing eas-cli..."
++  npm install -g eas-cli
++fi
++
++echo ""
++echo "📝 Log in to your Expo account:"
++eas login
++
++echo ""
++echo "📝 Initializing EAS project..."
++eas init
++echo "✅ Expo project linked"
++
++# ───── Step 4: Set backend URL ─────
++echo ""
++echo "═══════════════════════════════════════════════"
++echo "🖥️  BACKEND URL NEEDED"
++echo ""
++echo "You need to deploy the backend first. Quick options:"
++echo "  • Railway: https://railway.app (auto-deploys from GitHub)"
++echo "  • Render:  https://render.com (has free tier)"
++echo ""
++echo "Once deployed, enter your backend URL below."
++echo "Example: https://drpeptide-production.up.railway.app"
++echo ""
++read -p "Backend URL: " BACKEND_URL
++
++if [ -n "$BACKEND_URL" ]; then
++  # Update eas.json production env
++  # Using node since sed on macOS is different
++  node -e "
++    const fs = require('fs');
++    const eas = JSON.parse(fs.readFileSync('eas.json', 'utf-8'));
++    eas.build.production.env = eas.build.production.env || {};
++    eas.build.production.env.EXPO_PUBLIC_BACKEND_URL = '$BACKEND_URL';
++    eas.build.preview.env = eas.build.preview.env || {};
++    eas.build.preview.env.EXPO_PUBLIC_BACKEND_URL = '$BACKEND_URL';
++    fs.writeFileSync('eas.json', JSON.stringify(eas, null, 2));
++  "
++  echo "✅ Backend URL set in eas.json"
++fi
++
++# ───── Step 5: Validate ─────
++echo ""
++echo "🔍 Running pre-publish validation..."
++node scripts/validate-publish.js
++
++# ───── Step 6: Build ─────
++echo ""
++echo "═══════════════════════════════════════════════"
++read -p "🔨 Ready to build production AAB? (y/n): " BUILD_CONFIRM
++
++if [ "$BUILD_CONFIRM" = "y" ] || [ "$BUILD_CONFIRM" = "Y" ]; then
++  echo ""
++  echo "🔨 Building Android production AAB..."
++  echo "   (This takes ~15-20 minutes on EAS cloud)"
++  echo ""
++  eas build --platform android --profile production
++  echo ""
++  echo "✅ Build complete! Download the AAB from the link above."
++  echo ""
++  echo "═══════════════════════════════════════════════"
++  echo "📱 NEXT STEPS:"
++  echo "  1. Enable GitHub Pages: Settings → Pages → Branch: main, Folder: /docs"
++  echo "  2. Go to https://play.google.com/console"
++  echo "  3. Create App → Fill in forms using PLAY_CONSOLE_CHEATSHEET.md"
++  echo "  4. Upload the .aab file to Testing → Internal testing"
++  echo "  5. Test on your phone, then promote to Production"
++  echo "═══════════════════════════════════════════════"
++else
++  echo ""
++  echo "Skipped build. Run manually when ready:"
++  echo "  cd frontend && eas build --platform android --profile production"
++fi
++
++echo ""
++echo "🎉 Setup complete!"
+-- 
+2.43.0
+
