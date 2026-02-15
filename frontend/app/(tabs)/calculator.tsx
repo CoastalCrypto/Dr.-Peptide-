@@ -345,6 +345,88 @@ export default function CalculatorScreen() {
           </View>
         </View>
       </Modal>
+
+      <Modal visible={showScheduleModal} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <ScrollView contentContainerStyle={styles.scheduleModalContent}>
+            <View style={styles.modal}>
+              <Text style={styles.modalTitle}>Add to Schedule</Text>
+              
+              <Text style={styles.scheduleLabel}>Peptide/Medication Name</Text>
+              <TextInput 
+                testID="schedule-name-input" 
+                style={styles.input} 
+                placeholder="e.g., BPC-157" 
+                placeholderTextColor={colors.textTertiary} 
+                value={scheduleName} 
+                onChangeText={setScheduleName} 
+              />
+
+              <Text style={styles.scheduleLabel}>Current Dose</Text>
+              <View style={styles.dosePreview}>
+                <Text style={styles.dosePreviewText}>
+                  {doseMcg >= 1000 ? `${doseMcg / 1000} mg` : `${doseMcg} mcg`} • Draw {unitsToDraw.toFixed(1)} units
+                </Text>
+              </View>
+
+              <Text style={styles.scheduleLabel}>Frequency</Text>
+              <View style={styles.frequencyRow}>
+                <TouchableOpacity 
+                  style={[styles.frequencyBtn, scheduleFrequency === 'daily' && styles.frequencyBtnActive]} 
+                  onPress={() => { setScheduleFrequency('daily'); setScheduleDays([0,1,2,3,4,5,6]); }}
+                >
+                  <Text style={[styles.frequencyBtnText, scheduleFrequency === 'daily' && styles.frequencyBtnTextActive]}>Daily</Text>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={[styles.frequencyBtn, scheduleFrequency === 'weekly' && styles.frequencyBtnActive]} 
+                  onPress={() => setScheduleFrequency('weekly')}
+                >
+                  <Text style={[styles.frequencyBtnText, scheduleFrequency === 'weekly' && styles.frequencyBtnTextActive]}>Weekly</Text>
+                </TouchableOpacity>
+              </View>
+
+              {scheduleFrequency === 'weekly' && (
+                <>
+                  <Text style={styles.scheduleLabel}>Days</Text>
+                  <View style={styles.daysRow}>
+                    {DAYS_OF_WEEK.map(day => (
+                      <TouchableOpacity 
+                        key={day.id} 
+                        style={[styles.dayBtn, scheduleDays.includes(day.id) && styles.dayBtnActive]} 
+                        onPress={() => toggleScheduleDay(day.id)}
+                      >
+                        <Text style={[styles.dayBtnText, scheduleDays.includes(day.id) && styles.dayBtnTextActive]}>{day.short}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </>
+              )}
+
+              <Text style={styles.scheduleLabel}>Time of Day</Text>
+              <View style={styles.timeRow}>
+                {['Morning', 'Afternoon', 'Evening', 'Bedtime'].map(time => (
+                  <TouchableOpacity 
+                    key={time} 
+                    style={[styles.timeBtn, scheduleTime === time && styles.timeBtnActive]} 
+                    onPress={() => setScheduleTime(time)}
+                  >
+                    <Text style={[styles.timeBtnText, scheduleTime === time && styles.timeBtnTextActive]}>{time}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              <View style={styles.modalBtns}>
+                <TouchableOpacity style={styles.cancelBtn} onPress={() => setShowScheduleModal(false)}>
+                  <Text style={styles.cancelBtnText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity testID="add-schedule-confirm" style={styles.applyBtn} onPress={addToSchedule}>
+                  <Text style={styles.applyBtnText}>Add</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </ScrollView>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
