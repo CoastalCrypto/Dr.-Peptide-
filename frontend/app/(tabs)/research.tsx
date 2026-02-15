@@ -282,32 +282,53 @@ export default function ResearchScreen() {
             data={filteredPeptides}
             keyExtractor={item => item.id}
             contentContainerStyle={styles.list}
-            renderItem={({ item }) => (
-              <TouchableOpacity testID={`peptide-${item.id}`} style={styles.card} onPress={() => router.push(`/peptide/${item.id}`)}>
-                <View style={styles.cardHeader}>
-                  <View style={styles.cardNameRow}>
-                    <Text style={styles.cardName}>{item.name}</Text>
-                    {item.isCustom && <View style={styles.customBadge}><Text style={styles.customBadgeText}>Custom</Text></View>}
-                  </View>
-                  <View style={styles.cardActions}>
-                    {item.isCustom && (
-                      <TouchableOpacity testID={`delete-${item.id}`} onPress={() => deleteCustomItem(item.id, 'peptide')} style={styles.deleteBtn}>
-                        <MaterialCommunityIcons name="delete-outline" size={20} color={colors.error} />
-                      </TouchableOpacity>
-                    )}
-                    <MaterialCommunityIcons name="chevron-right" size={24} color={colors.textTertiary} />
-                  </View>
-                </View>
-                <View style={styles.cardTags}>
-                  {item.categories.map(cat => (
-                    <View key={cat} style={styles.tag}>
-                      <Text style={styles.tagText}>{cat}</Text>
+            renderItem={({ item }) => {
+              const isSelected = selectedForCompare.includes(item.id);
+              return (
+                <TouchableOpacity 
+                  testID={`peptide-${item.id}`} 
+                  style={[styles.card, compareMode && isSelected && styles.cardSelected]} 
+                  onPress={() => {
+                    if (compareMode) {
+                      if (isSelected) {
+                        setSelectedForCompare(prev => prev.filter(id => id !== item.id));
+                      } else if (selectedForCompare.length < 3) {
+                        setSelectedForCompare(prev => [...prev, item.id]);
+                      }
+                    } else {
+                      router.push(`/peptide/${item.id}`);
+                    }
+                  }}
+                >
+                  <View style={styles.cardHeader}>
+                    <View style={styles.cardNameRow}>
+                      {compareMode && (
+                        <View style={[styles.checkbox, isSelected && styles.checkboxSelected]}>
+                          {isSelected && <MaterialCommunityIcons name="check" size={14} color={colors.primaryForeground} />}
+                        </View>
+                      )}
+                      <Text style={styles.cardName}>{item.name}</Text>
+                      {item.isCustom && <View style={styles.customBadge}><Text style={styles.customBadgeText}>Custom</Text></View>}
                     </View>
-                  ))}
-                </View>
-                <Text style={styles.cardDesc} numberOfLines={2}>{item.description}</Text>
-                <View style={styles.cardMeta}>
-                  <Text style={styles.metaText}>{item.routes.join(' · ')}</Text>
+                    <View style={styles.cardActions}>
+                      {item.isCustom && !compareMode && (
+                        <TouchableOpacity testID={`delete-${item.id}`} onPress={() => deleteCustomItem(item.id, 'peptide')} style={styles.deleteBtn}>
+                          <MaterialCommunityIcons name="delete-outline" size={20} color={colors.error} />
+                        </TouchableOpacity>
+                      )}
+                      {!compareMode && <MaterialCommunityIcons name="chevron-right" size={24} color={colors.textTertiary} />}
+                    </View>
+                  </View>
+                  <View style={styles.cardTags}>
+                    {item.categories.map(cat => (
+                      <View key={cat} style={styles.tag}>
+                        <Text style={styles.tagText}>{cat}</Text>
+                      </View>
+                    ))}
+                  </View>
+                  <Text style={styles.cardDesc} numberOfLines={2}>{item.description}</Text>
+                  <View style={styles.cardMeta}>
+                    <Text style={styles.metaText}>{item.routes.join(' · ')}</Text>
                   <Text style={styles.metaText}>{item.frequency}</Text>
                 </View>
               </TouchableOpacity>
