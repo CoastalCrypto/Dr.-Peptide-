@@ -96,7 +96,7 @@ export function NavigationHeader() {
                 testID="nav-menu-close"
                 onPress={() => setMenuOpen(false)}
               >
-                <MaterialCommunityIcons name="close" size={24} color={colors.textTertiary} />
+                <Text style={{ fontSize: 20, color: colors.textTertiary }}>✕</Text>
               </TouchableOpacity>
             </View>
             
