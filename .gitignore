@@ -83,10 +83,33 @@ android-sdk/
 # Google Play service account key (NEVER commit this)
 google-service-account.json
 
+# Signing keys and keystores
+*.keystore
+*.jks
+*.p12
+upload-keystore.keystore
+
+# Build artifacts
+*.aab
+*.apk
+*.ipa
+
 # Environment files
 *.env
 *.env.*
 !.env.example
+-e 
+# Environment files
+*.env
+*.env.*
+-e 
+# Environment files
+*.env
+*.env.*
+-e 
+# Environment files
+*.env
+*.env.*
 -e 
 # Environment files
 *.env

@@ -5,6 +5,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { ThemeProvider, useTheme } from '../src/context/ThemeContext';
+import { AuthProvider } from '../src/context/AuthContext';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -18,6 +19,7 @@ function RootLayoutContent() {
         <Stack.Screen name="index" />
         <Stack.Screen name="waiver" />
         <Stack.Screen name="onboarding" />
+        <Stack.Screen name="auth-callback" />
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="privacy-policy" options={{ presentation: 'modal' }} />
         <Stack.Screen
@@ -54,7 +56,9 @@ export default function RootLayout() {
 
   return (
     <ThemeProvider>
-      <RootLayoutContent />
+      <AuthProvider>
+        <RootLayoutContent />
+      </AuthProvider>
     </ThemeProvider>
   );
 }

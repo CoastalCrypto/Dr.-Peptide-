@@ -1,13 +1,18 @@
 import { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, Switch, Alert, Linking } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, Switch, Alert, Linking, Modal, TextInput, ActivityIndicator, Platform } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Constants from 'expo-constants';
 import { useTheme } from '../../src/context/ThemeContext';
+import { useAuth } from '../../src/context/AuthContext';
 import { typography, spacing, DISCLAIMER } from '../../src/theme';
 import { Storage, KEYS } from '../../src/utils/storage';
 import { api } from '../../src/utils/api';
 import { useRouter } from 'expo-router';
-import { Platform } from 'react-native';
+import { NotificationServiceV2, NotificationSettings } from '../../src/services/notificationsV2';
+import { WeeklySummaryService } from '../../src/services/weeklySummary';
+import { AppLockService } from '../../src/services/appLock';
+import { CloudSyncService } from '../../src/services/cloudSync';
+import { VendorManagement } from '../../src/components/VendorManagement';
 
 interface Settings {
   weightUnit: string;
@@ -15,39 +20,329 @@ interface Settings {
   notifications: boolean;
 }
 
+const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
 export default function ProfileScreen() {
   const { colors, mode, setMode, isDark } = useTheme();
+  const { user, isAuthenticated, login, logout, isLoading: authLoading } = useAuth();
   const router = useRouter();
-  const [user, setUser] = useState<any>(null);
   const [settings, setSettings] = useState<Settings>({ weightUnit: 'lbs', measureUnit: 'inches', notifications: true });
+  
+  // Security state
+  const [biometricSupported, setBiometricSupported] = useState(false);
+  const [biometricEnabled, setBiometricEnabled] = useState(false);
+  const [hasPIN, setHasPIN] = useState(false);
+  const [showPINModal, setShowPINModal] = useState(false);
+  const [pinInput, setPinInput] = useState('');
+  const [pinConfirm, setPinConfirm] = useState('');
+  const [biometricName, setBiometricName] = useState('Biometrics');
+  
+  // AI Summary state
+  const [loadingSummary, setLoadingSummary] = useState(false);
+  const [weeklyRecap, setWeeklyRecap] = useState<any>(null);
+  const [latestSummary, setLatestSummary] = useState<any>(null);
+  const [showSummaryModal, setShowSummaryModal] = useState(false);
+  
+  // Notification settings state
+  const [notifSettings, setNotifSettings] = useState<NotificationSettings>({
+    doseRemindersEnabled: true,
+    journalReminderEnabled: true,
+    journalReminderTime: { hour: 20, minute: 0 },
+    weeklySummaryEnabled: true,
+    weeklySummaryDay: 0,
+    weeklySummaryTime: { hour: 10, minute: 0 },
+  });
+  const [showNotifSettings, setShowNotifSettings] = useState(false);
+  
+  // Vendor Management state
+  const [showVendorManagement, setShowVendorManagement] = useState(false);
+  
+  // Cloud Sync state
+  const [syncStatus, setSyncStatus] = useState<'idle' | 'syncing' | 'synced' | 'error'>('idle');
+  const [lastSyncTime, setLastSyncTime] = useState<string | null>(null);
+  const [hasCloudData, setHasCloudData] = useState(false);
 
   useEffect(() => {
-    Storage.get<any>(KEYS.USER).then(u => setUser(u));
     Storage.get<Settings>(KEYS.SETTINGS).then(s => { if (s) setSettings(s); });
+    loadSecuritySettings();
+    loadWorkoutRecap();
+    loadNotificationSettings();
+    loadLatestSummary();
+    checkAndAutoGenerateSummary();
   }, []);
+  
+  // Check sync status when user logs in
+  useEffect(() => {
+    if (isAuthenticated && user?.user_id) {
+      checkSyncStatus();
+    }
+  }, [isAuthenticated, user?.user_id]);
+  
+  const loadNotificationSettings = async () => {
+    const settings = await NotificationServiceV2.getSettings();
+    setNotifSettings(settings);
+  };
+  
+  const loadLatestSummary = async () => {
+    const summary = await WeeklySummaryService.getLatestSummary();
+    setLatestSummary(summary);
+  };
+  
+  const checkAndAutoGenerateSummary = async () => {
+    const newSummary = await WeeklySummaryService.checkAndAutoGenerate();
+    if (newSummary) {
+      setLatestSummary(newSummary);
+    }
+  };
+  
+  const loadSecuritySettings = async () => {
+    const { supported, types } = await AppLockService.checkBiometricSupport();
+    setBiometricSupported(supported);
+    if (supported) {
+      setBiometricName(AppLockService.getBiometricTypeName(types));
+    }
+    setBiometricEnabled(await AppLockService.isBiometricEnabled());
+    setHasPIN(await AppLockService.hasPIN());
+  };
+  
+  const loadWorkoutRecap = async () => {
+    const entries = await Storage.get<any[]>(KEYS.JOURNAL_ENTRIES) || [];
+    const weekAgo = new Date();
+    weekAgo.setDate(weekAgo.getDate() - 7);
+    
+    const weekEntries = entries.filter(e => new Date(e.date) >= weekAgo);
+    const gymEntries = weekEntries.filter(e => e.gym_activity);
+    
+    if (gymEntries.length > 0) {
+      const totalMins = gymEntries.reduce((sum, e) => sum + (e.gym_activity?.duration_mins || 0), 0);
+      const workoutTypes: Record<string, number> = {};
+      gymEntries.forEach(e => {
+        const type = e.gym_activity?.type || 'other';
+        workoutTypes[type] = (workoutTypes[type] || 0) + 1;
+      });
+      const mostFrequent = Object.entries(workoutTypes).sort((a, b) => b[1] - a[1])[0];
+      
+      setWeeklyRecap({
+        totalWorkouts: gymEntries.length,
+        totalMinutes: totalMins,
+        mostFrequentType: mostFrequent ? mostFrequent[0] : null,
+        streak: gymEntries.length,
+      });
+    }
+  };
 
   const updateSetting = async (key: keyof Settings, value: any) => {
     const updated = { ...settings, [key]: value };
     setSettings(updated);
     await Storage.set(KEYS.SETTINGS, updated);
+    
+    if (key === 'notifications') {
+      if (value) {
+        const granted = await NotificationServiceV2.requestPermissions();
+        if (!granted) {
+          Alert.alert('Permissions Required', 'Please enable notifications in your device settings.');
+          setSettings({ ...settings, notifications: false });
+        } else {
+          // Setup all notifications
+          await NotificationServiceV2.setupAllNotifications();
+        }
+      } else {
+        await NotificationServiceV2.cancelAllNotifications();
+      }
+    }
   };
-
-  const handleGoogleAuth = () => {
-    // REMINDER: DO NOT HARDCODE THE URL, OR ADD ANY FALLBACKS OR REDIRECT URLS, THIS BREAKS THE AUTH
-    if (Platform.OS === 'web') {
-      const redirectUrl = window.location.origin + '/(tabs)/profile';
-      window.location.href = `https://auth.emergentagent.com/?redirect=${encodeURIComponent(redirectUrl)}`;
+  
+  // Notification settings handlers
+  const updateNotifSetting = async (key: keyof NotificationSettings, value: any) => {
+    const updated = { ...notifSettings, [key]: value };
+    setNotifSettings(updated);
+    await NotificationServiceV2.saveSettings(updated);
+    
+    // Re-setup notifications
+    if (settings.notifications) {
+      if (key === 'journalReminderEnabled') {
+        if (value) {
+          await NotificationServiceV2.scheduleJournalReminder(
+            updated.journalReminderTime.hour,
+            updated.journalReminderTime.minute
+          );
+        } else {
+          await NotificationServiceV2.cancelJournalReminder();
+        }
+      } else if (key === 'weeklySummaryEnabled') {
+        if (value) {
+          await NotificationServiceV2.scheduleWeeklySummary(
+            updated.weeklySummaryDay,
+            updated.weeklySummaryTime.hour,
+            updated.weeklySummaryTime.minute
+          );
+        } else {
+          await NotificationServiceV2.cancelWeeklySummary();
+        }
+      }
+    }
+  };
+  
+  const generateNewSummary = async () => {
+    setLoadingSummary(true);
+    try {
+      const summary = await WeeklySummaryService.generateAndSaveWeeklySummary(false);
+      setLatestSummary(summary);
+      setShowSummaryModal(true);
+    } catch (error: any) {
+      Alert.alert('Error', 'Failed to generate summary. Please try again.');
+    } finally {
+      setLoadingSummary(false);
+    }
+  };
+  
+  const toggleBiometric = async (enabled: boolean) => {
+    if (enabled) {
+      const success = await AppLockService.authenticateWithBiometrics('Verify to enable ' + biometricName);
+      if (success) {
+        await AppLockService.setBiometricEnabled(true);
+        setBiometricEnabled(true);
+      }
     } else {
-      Alert.alert('Google Auth', 'Google Auth is available on web preview. Use the web preview to sign in.');
+      await AppLockService.setBiometricEnabled(false);
+      setBiometricEnabled(false);
+    }
+  };
+  
+  const savePIN = async () => {
+    if (pinInput.length < 4) {
+      Alert.alert('Invalid PIN', 'PIN must be at least 4 digits.');
+      return;
+    }
+    if (pinInput !== pinConfirm) {
+      Alert.alert('PIN Mismatch', 'PINs do not match. Please try again.');
+      setPinInput('');
+      setPinConfirm('');
+      return;
+    }
+    
+    const success = await AppLockService.savePIN(pinInput);
+    if (success) {
+      await AppLockService.setLockEnabled(true);
+      setHasPIN(true);
+      setShowPINModal(false);
+      setPinInput('');
+      setPinConfirm('');
+      Alert.alert('Success', 'PIN has been set successfully.');
+    }
+  };
+  
+  const removePIN = async () => {
+    Alert.alert('Remove PIN', 'Are you sure you want to remove your PIN?', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Remove', style: 'destructive', onPress: async () => {
+        await AppLockService.removePIN();
+        await AppLockService.setLockEnabled(false);
+        setHasPIN(false);
+      }},
+    ]);
+  };
+  
+  // Cloud Sync Functions
+  const checkSyncStatus = async () => {
+    if (!user?.user_id) return;
+    try {
+      const status = await CloudSyncService.getSyncInfo(user.user_id);
+      setLastSyncTime(status.lastSync);
+      setHasCloudData(status.hasCloudData);
+    } catch (error) {
+      console.error('Failed to check sync status:', error);
+    }
+  };
+  
+  const handleBackupToCloud = async () => {
+    if (!user?.user_id) {
+      Alert.alert('Sign In Required', 'Please sign in with Google to backup your data.');
+      return;
+    }
+    
+    setSyncStatus('syncing');
+    try {
+      const result = await CloudSyncService.syncToCloud(user.user_id);
+      if (result.success) {
+        setSyncStatus('synced');
+        setLastSyncTime(new Date().toISOString());
+        setHasCloudData(true);
+        Alert.alert('Backup Complete', 'Your data has been backed up to the cloud successfully.');
+      } else {
+        setSyncStatus('error');
+        Alert.alert('Backup Failed', result.error || 'Failed to backup data. Please try again.');
+      }
+    } catch (error) {
+      setSyncStatus('error');
+      Alert.alert('Backup Failed', 'An error occurred while backing up your data.');
+    }
+  };
+  
+  const handleRestoreFromCloud = async () => {
+    if (!user?.user_id) {
+      Alert.alert('Sign In Required', 'Please sign in with Google to restore your data.');
+      return;
+    }
+    
+    Alert.alert(
+      'Restore from Cloud',
+      'This will replace your local data with data from the cloud. Continue?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Restore', onPress: async () => {
+          setSyncStatus('syncing');
+          try {
+            const result = await CloudSyncService.syncFromCloud(user.user_id);
+            if (result.success) {
+              setSyncStatus('synced');
+              Alert.alert('Restore Complete', 'Your data has been restored from the cloud.');
+            } else {
+              setSyncStatus('error');
+              Alert.alert('Restore Failed', result.error || 'Failed to restore data.');
+            }
+          } catch (error) {
+            setSyncStatus('error');
+            Alert.alert('Restore Failed', 'An error occurred while restoring your data.');
+          }
+        }},
+      ]
+    );
+  };
+  
+  const handleMergeData = async () => {
+    if (!user?.user_id) {
+      Alert.alert('Sign In Required', 'Please sign in with Google to merge your data.');
+      return;
+    }
+    
+    setSyncStatus('syncing');
+    try {
+      const result = await CloudSyncService.mergeData(user.user_id);
+      if (result.success) {
+        setSyncStatus('synced');
+        Alert.alert('Merge Complete', `Data merged successfully. ${result.merged} new items added.`);
+      } else {
+        setSyncStatus('error');
+        Alert.alert('Merge Failed', 'Failed to merge data. Please try again.');
+      }
+    } catch (error) {
+      setSyncStatus('error');
+      Alert.alert('Merge Failed', 'An error occurred while merging your data.');
     }
   };
 
+  const handleGoogleAuth = () => {
+    // Use the login function from AuthContext
+    login();
+  };
+
   const handleLogout = async () => {
-    try {
-      await api.post('/api/auth/logout', {});
-    } catch {}
-    await Storage.remove(KEYS.USER);
-    setUser(null);
+    // Use the logout function from AuthContext
+    await logout();
+    setSyncStatus('idle');
+    setLastSyncTime(null);
+    setHasCloudData(false);
   };
 
   const exportData = async () => {
@@ -85,13 +380,18 @@ export default function ProfileScreen() {
           try {
             // Attempt to delete server-side data
             await api.delete('/api/auth/delete-account');
+            // Clear cloud sync data too
+            if (user?.user_id) {
+              await CloudSyncService.clearCloudData(user.user_id);
+            }
           } catch {}
           // Clear all local data
           const allKeys = Object.values(KEYS);
           for (const key of allKeys) {
             await Storage.remove(key);
           }
-          setUser(null);
+          // Log the user out
+          await logout();
           Alert.alert('Account Deleted', 'All your data has been permanently removed.');
         }},
       ]
@@ -126,35 +426,126 @@ export default function ProfileScreen() {
           </TouchableOpacity>
         )}
 
+        {/* Cloud Sync Section - Only visible when authenticated */}
+        {isAuthenticated && (
+          <>
+            <Text style={styles.sectionTitle}>Cloud Sync</Text>
+            <View style={styles.settingsCard}>
+              {/* Sync Status */}
+              <View style={styles.syncStatusRow}>
+                <View style={styles.settingInfo}>
+                  <MaterialCommunityIcons 
+                    name={syncStatus === 'syncing' ? 'cloud-sync' : syncStatus === 'synced' ? 'cloud-check' : 'cloud-outline'} 
+                    size={24} 
+                    color={syncStatus === 'synced' ? colors.success : syncStatus === 'error' ? colors.error : colors.accent} 
+                  />
+                  <View>
+                    <Text style={styles.settingLabel}>
+                      {syncStatus === 'syncing' ? 'Syncing...' : 
+                       syncStatus === 'synced' ? 'Data Synced' : 
+                       syncStatus === 'error' ? 'Sync Error' : 'Cloud Backup'}
+                    </Text>
+                    {lastSyncTime && (
+                      <Text style={styles.syncTimeText}>
+                        Last sync: {new Date(lastSyncTime).toLocaleDateString()} {new Date(lastSyncTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </Text>
+                    )}
+                  </View>
+                </View>
+                {syncStatus === 'syncing' && (
+                  <ActivityIndicator size="small" color={colors.accent} />
+                )}
+              </View>
+              <View style={styles.divider} />
+              
+              {/* Backup Button */}
+              <TouchableOpacity 
+                testID="backup-to-cloud-btn" 
+                style={styles.settingRow} 
+                onPress={handleBackupToCloud}
+                disabled={syncStatus === 'syncing'}
+              >
+                <View style={styles.settingInfo}>
+                  <MaterialCommunityIcons name="cloud-upload" size={22} color={colors.accent} />
+                  <Text style={styles.settingLabel}>Backup to Cloud</Text>
+                </View>
+                <MaterialCommunityIcons name="chevron-right" size={22} color={colors.textTertiary} />
+              </TouchableOpacity>
+              <View style={styles.divider} />
+              
+              {/* Restore Button */}
+              <TouchableOpacity 
+                testID="restore-from-cloud-btn" 
+                style={styles.settingRow} 
+                onPress={handleRestoreFromCloud}
+                disabled={syncStatus === 'syncing' || !hasCloudData}
+              >
+                <View style={styles.settingInfo}>
+                  <MaterialCommunityIcons name="cloud-download" size={22} color={hasCloudData ? colors.accent : colors.textTertiary} />
+                  <Text style={[styles.settingLabel, !hasCloudData && { color: colors.textTertiary }]}>
+                    Restore from Cloud
+                  </Text>
+                </View>
+                {hasCloudData ? (
+                  <MaterialCommunityIcons name="chevron-right" size={22} color={colors.textTertiary} />
+                ) : (
+                  <Text style={styles.noDataText}>No backup</Text>
+                )}
+              </TouchableOpacity>
+              <View style={styles.divider} />
+              
+              {/* Merge Button */}
+              <TouchableOpacity 
+                testID="merge-data-btn" 
+                style={styles.settingRow} 
+                onPress={handleMergeData}
+                disabled={syncStatus === 'syncing' || !hasCloudData}
+              >
+                <View style={styles.settingInfo}>
+                  <MaterialCommunityIcons name="merge" size={22} color={hasCloudData ? colors.accent : colors.textTertiary} />
+                  <Text style={[styles.settingLabel, !hasCloudData && { color: colors.textTertiary }]}>
+                    Merge Local & Cloud Data
+                  </Text>
+                </View>
+                <MaterialCommunityIcons name="chevron-right" size={22} color={colors.textTertiary} />
+              </TouchableOpacity>
+            </View>
+            
+            <Text style={styles.syncHint}>
+              Your data is stored locally. Use Cloud Sync to backup and restore across devices.
+            </Text>
+          </>
+        )}
+
         <Text style={styles.sectionTitle}>Appearance</Text>
         <View style={styles.settingsCard}>
           <View style={styles.settingRow}>
             <View style={styles.settingInfo}>
-              <MaterialCommunityIcons 
-                name={isDark ? 'moon-waning-crescent' : 'white-balance-sunny'} 
-                size={22} 
-                color={colors.accent} 
+              <MaterialCommunityIcons
+                name={isDark ? 'moon-waning-crescent' : 'white-balance-sunny'}
+                size={22}
+                color={colors.accent}
               />
               <Text style={styles.settingLabel}>Theme</Text>
             </View>
             <View style={styles.themeToggle}>
-              <TouchableOpacity 
+              <TouchableOpacity
                 testID="theme-light"
-                style={[styles.themeBtn, mode === 'light' && styles.themeBtnActive]} 
+                style={[styles.themeBtn, mode === 'light' && styles.themeBtnActive]}
                 onPress={() => setMode('light')}
               >
                 <MaterialCommunityIcons name="white-balance-sunny" size={18} color={mode === 'light' ? colors.primaryForeground : colors.textTertiary} />
               </TouchableOpacity>
-              <TouchableOpacity 
+              <TouchableOpacity
                 testID="theme-system"
-                style={[styles.themeBtn, mode === 'system' && styles.themeBtnActive]} 
+                style={[styles.themeBtn, mode === 'system' && styles.themeBtnActive]}
                 onPress={() => setMode('system')}
               >
                 <MaterialCommunityIcons name="cellphone" size={18} color={mode === 'system' ? colors.primaryForeground : colors.textTertiary} />
               </TouchableOpacity>
-              <TouchableOpacity 
+              <TouchableOpacity
                 testID="theme-dark"
-                style={[styles.themeBtn, mode === 'dark' && styles.themeBtnActive]} 
+                style={[styles.themeBtn, mode === 'dark' && styles.themeBtnActive]}
                 onPress={() => setMode('dark')}
               >
                 <MaterialCommunityIcons name="moon-waning-crescent" size={18} color={mode === 'dark' ? colors.primaryForeground : colors.textTertiary} />
@@ -198,6 +589,17 @@ export default function ProfileScreen() {
           </View>
         </View>
 
+        <Text style={styles.sectionTitle}>Vendors & Orders</Text>
+        <View style={styles.settingsCard}>
+          <TouchableOpacity testID="vendor-management-btn" style={styles.settingRow} onPress={() => setShowVendorManagement(true)}>
+            <View style={styles.settingInfo}>
+              <MaterialCommunityIcons name="store" size={22} color={colors.accent} />
+              <Text style={styles.settingLabel}>Manage Vendors & Orders</Text>
+            </View>
+            <MaterialCommunityIcons name="chevron-right" size={22} color={colors.textTertiary} />
+          </TouchableOpacity>
+        </View>
+
         <Text style={styles.sectionTitle}>Data Management</Text>
         <View style={styles.settingsCard}>
           <TouchableOpacity testID="export-data-btn" style={styles.settingRow} onPress={exportData}>
@@ -219,6 +621,176 @@ export default function ProfileScreen() {
             </>
           )}
         </View>
+        
+        <Text style={styles.sectionTitle}>Security</Text>
+        <View style={styles.settingsCard}>
+          {biometricSupported && (
+            <>
+              <View style={styles.settingRow}>
+                <View style={styles.settingInfo}>
+                  <MaterialCommunityIcons name="fingerprint" size={22} color={colors.accent} />
+                  <Text style={styles.settingLabel}>{biometricName}</Text>
+                </View>
+                <Switch 
+                  testID="biometric-switch"
+                  value={biometricEnabled} 
+                  onValueChange={toggleBiometric} 
+                  trackColor={{ true: colors.accent, false: colors.secondary }} 
+                  thumbColor={colors.primaryForeground} 
+                />
+              </View>
+              <View style={styles.divider} />
+            </>
+          )}
+          <TouchableOpacity testID="pin-setup-btn" style={styles.settingRow} onPress={() => hasPIN ? removePIN() : setShowPINModal(true)}>
+            <View style={styles.settingInfo}>
+              <MaterialCommunityIcons name="lock" size={22} color={colors.accent} />
+              <Text style={styles.settingLabel}>{hasPIN ? 'Remove PIN Lock' : 'Set PIN Lock'}</Text>
+            </View>
+            <MaterialCommunityIcons name={hasPIN ? 'check-circle' : 'chevron-right'} size={22} color={hasPIN ? colors.success : colors.textTertiary} />
+          </TouchableOpacity>
+        </View>
+        
+        <Text style={styles.sectionTitle}>AI Weekly Summary</Text>
+        <View style={styles.settingsCard}>
+          {/* Latest Summary Preview */}
+          {latestSummary && (
+            <>
+              <TouchableOpacity testID="view-latest-summary-btn" style={styles.settingRow} onPress={() => setShowSummaryModal(true)}>
+                <View style={styles.settingInfo}>
+                  <MaterialCommunityIcons name="chart-line" size={22} color={colors.success} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.settingLabel}>Latest Summary</Text>
+                    <Text style={styles.syncTimeText}>
+                      Generated: {new Date(latestSummary.generatedAt).toLocaleDateString()}
+                      {latestSummary.isAutoGenerated && ' (Auto)'}
+                    </Text>
+                  </View>
+                </View>
+                <MaterialCommunityIcons name="chevron-right" size={22} color={colors.textTertiary} />
+              </TouchableOpacity>
+              <View style={styles.divider} />
+            </>
+          )}
+          
+          {/* Generate New Summary Button */}
+          <TouchableOpacity testID="ai-summary-btn" style={styles.settingRow} onPress={generateNewSummary} disabled={loadingSummary}>
+            <View style={styles.settingInfo}>
+              <MaterialCommunityIcons name="brain" size={22} color={colors.accent} />
+              <Text style={styles.settingLabel}>{loadingSummary ? 'Generating...' : 'Generate New Summary'}</Text>
+            </View>
+            {loadingSummary ? (
+              <ActivityIndicator size="small" color={colors.accent} />
+            ) : (
+              <MaterialCommunityIcons name="refresh" size={22} color={colors.textTertiary} />
+            )}
+          </TouchableOpacity>
+        </View>
+        
+        <Text style={styles.syncHint}>
+          Summaries auto-generate weekly. Tap to create one on demand.
+        </Text>
+        
+        {/* Notifications Settings */}
+        <Text style={styles.sectionTitle}>Notifications</Text>
+        <View style={styles.settingsCard}>
+          {/* Dose Reminders */}
+          <View style={styles.settingRow}>
+            <View style={styles.settingInfo}>
+              <MaterialCommunityIcons name="needle" size={22} color={colors.accent} />
+              <Text style={styles.settingLabel}>Dose Reminders</Text>
+            </View>
+            <Switch
+              testID="dose-reminders-switch"
+              value={notifSettings.doseRemindersEnabled}
+              onValueChange={(v) => updateNotifSetting('doseRemindersEnabled', v)}
+              trackColor={{ false: colors.border, true: colors.accent }}
+              thumbColor={notifSettings.doseRemindersEnabled ? colors.primaryForeground : colors.textTertiary}
+            />
+          </View>
+          <View style={styles.divider} />
+          
+          {/* Journal Reminder */}
+          <View style={styles.settingRow}>
+            <View style={styles.settingInfo}>
+              <MaterialCommunityIcons name="book-open-variant" size={22} color={colors.accent} />
+              <View>
+                <Text style={styles.settingLabel}>Daily Journal Reminder</Text>
+                {notifSettings.journalReminderEnabled && (
+                  <Text style={styles.syncTimeText}>
+                    Every day at {notifSettings.journalReminderTime.hour > 12 ? notifSettings.journalReminderTime.hour - 12 : notifSettings.journalReminderTime.hour}:00 {notifSettings.journalReminderTime.hour >= 12 ? 'PM' : 'AM'}
+                  </Text>
+                )}
+              </View>
+            </View>
+            <Switch
+              testID="journal-reminder-switch"
+              value={notifSettings.journalReminderEnabled}
+              onValueChange={(v) => updateNotifSetting('journalReminderEnabled', v)}
+              trackColor={{ false: colors.border, true: colors.accent }}
+              thumbColor={notifSettings.journalReminderEnabled ? colors.primaryForeground : colors.textTertiary}
+            />
+          </View>
+          <View style={styles.divider} />
+          
+          {/* Weekly Summary Notification */}
+          <View style={styles.settingRow}>
+            <View style={styles.settingInfo}>
+              <MaterialCommunityIcons name="chart-timeline-variant" size={22} color={colors.accent} />
+              <View>
+                <Text style={styles.settingLabel}>Weekly Summary Alert</Text>
+                {notifSettings.weeklySummaryEnabled && (
+                  <Text style={styles.syncTimeText}>
+                    Every {DAYS[notifSettings.weeklySummaryDay]} at {notifSettings.weeklySummaryTime.hour > 12 ? notifSettings.weeklySummaryTime.hour - 12 : notifSettings.weeklySummaryTime.hour}:00 {notifSettings.weeklySummaryTime.hour >= 12 ? 'PM' : 'AM'}
+                  </Text>
+                )}
+              </View>
+            </View>
+            <Switch
+              testID="weekly-summary-switch"
+              value={notifSettings.weeklySummaryEnabled}
+              onValueChange={(v) => updateNotifSetting('weeklySummaryEnabled', v)}
+              trackColor={{ false: colors.border, true: colors.accent }}
+              thumbColor={notifSettings.weeklySummaryEnabled ? colors.primaryForeground : colors.textTertiary}
+            />
+          </View>
+        </View>
+        
+        {Platform.OS === 'web' && (
+          <Text style={styles.syncHint}>
+            Note: Push notifications are only available on mobile devices.
+          </Text>
+        )}
+        
+        {weeklyRecap && (
+          <>
+            <Text style={styles.sectionTitle}>Weekly Workout Recap</Text>
+            <View style={styles.recapCard}>
+              <View style={styles.recapRow}>
+                <View style={styles.recapItem}>
+                  <MaterialCommunityIcons name="dumbbell" size={28} color={colors.accent} />
+                  <Text style={styles.recapValue}>{weeklyRecap.totalWorkouts}</Text>
+                  <Text style={styles.recapLabel}>Workouts</Text>
+                </View>
+                <View style={styles.recapItem}>
+                  <MaterialCommunityIcons name="clock-outline" size={28} color={colors.accent} />
+                  <Text style={styles.recapValue}>{weeklyRecap.totalMinutes}</Text>
+                  <Text style={styles.recapLabel}>Minutes</Text>
+                </View>
+                <View style={styles.recapItem}>
+                  <MaterialCommunityIcons name="fire" size={28} color={colors.accent} />
+                  <Text style={styles.recapValue}>{weeklyRecap.streak}</Text>
+                  <Text style={styles.recapLabel}>Streak</Text>
+                </View>
+              </View>
+              {weeklyRecap.mostFrequentType && (
+                <View style={styles.recapBadge}>
+                  <Text style={styles.recapBadgeText}>Most Active: {weeklyRecap.mostFrequentType.charAt(0).toUpperCase() + weeklyRecap.mostFrequentType.slice(1)}</Text>
+                </View>
+              )}
+            </View>
+          </>
+        )}
 
         <Text style={styles.sectionTitle}>Legal</Text>
         <View style={styles.settingsCard}>
@@ -246,6 +818,134 @@ export default function ProfileScreen() {
           <Text style={styles.disclaimerText}>{DISCLAIMER}</Text>
         </View>
       </ScrollView>
+      
+      {/* PIN Setup Modal */}
+      <Modal visible={showPINModal} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <View style={styles.pinModal}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Set PIN Lock</Text>
+              <TouchableOpacity onPress={() => { setShowPINModal(false); setPinInput(''); setPinConfirm(''); }}>
+                <MaterialCommunityIcons name="close" size={24} color={colors.textTertiary} />
+              </TouchableOpacity>
+            </View>
+            
+            <Text style={styles.pinLabel}>Enter PIN (min 4 digits)</Text>
+            <TextInput
+              testID="pin-input"
+              style={styles.pinInput}
+              value={pinInput}
+              onChangeText={setPinInput}
+              keyboardType="numeric"
+              secureTextEntry
+              maxLength={6}
+              placeholder="Enter PIN"
+              placeholderTextColor={colors.textTertiary}
+            />
+            
+            <Text style={styles.pinLabel}>Confirm PIN</Text>
+            <TextInput
+              testID="pin-confirm"
+              style={styles.pinInput}
+              value={pinConfirm}
+              onChangeText={setPinConfirm}
+              keyboardType="numeric"
+              secureTextEntry
+              maxLength={6}
+              placeholder="Confirm PIN"
+              placeholderTextColor={colors.textTertiary}
+            />
+            
+            <TouchableOpacity testID="save-pin-btn" style={styles.savePinBtn} onPress={savePIN}>
+              <Text style={styles.savePinBtnText}>Save PIN</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+      
+      {/* Vendor Management Modal */}
+      <VendorManagement 
+        visible={showVendorManagement} 
+        onClose={() => setShowVendorManagement(false)} 
+      />
+      
+      {/* Weekly Summary Modal */}
+      <Modal visible={showSummaryModal} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <View style={styles.summaryModal}>
+            <View style={styles.modalHeader}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                <MaterialCommunityIcons name="chart-line" size={24} color={colors.accent} />
+                <Text style={styles.modalTitle}>Weekly Summary</Text>
+              </View>
+              <TouchableOpacity onPress={() => setShowSummaryModal(false)}>
+                <MaterialCommunityIcons name="close" size={24} color={colors.textTertiary} />
+              </TouchableOpacity>
+            </View>
+            
+            {latestSummary && (
+              <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: spacing.md }}>
+                {/* Stats Grid */}
+                <View style={styles.summaryStatsGrid}>
+                  <View style={styles.summaryStatItem}>
+                    <MaterialCommunityIcons name="dumbbell" size={24} color={colors.accent} />
+                    <Text style={styles.summaryStatValue}>{latestSummary.stats?.totalWorkouts || 0}</Text>
+                    <Text style={styles.summaryStatLabel}>Workouts</Text>
+                  </View>
+                  <View style={styles.summaryStatItem}>
+                    <MaterialCommunityIcons name="sleep" size={24} color="#6C63FF" />
+                    <Text style={styles.summaryStatValue}>{(latestSummary.stats?.avgSleep || 0).toFixed(1)}</Text>
+                    <Text style={styles.summaryStatLabel}>Avg Sleep</Text>
+                  </View>
+                  <View style={styles.summaryStatItem}>
+                    <MaterialCommunityIcons name="lightning-bolt" size={24} color="#FFD166" />
+                    <Text style={styles.summaryStatValue}>{(latestSummary.stats?.avgEnergy || 0).toFixed(1)}</Text>
+                    <Text style={styles.summaryStatLabel}>Avg Energy</Text>
+                  </View>
+                  <View style={styles.summaryStatItem}>
+                    <MaterialCommunityIcons name="pill" size={24} color="#06D6A0" />
+                    <Text style={styles.summaryStatValue}>{latestSummary.stats?.doseAdherence || 100}%</Text>
+                    <Text style={styles.summaryStatLabel}>Adherence</Text>
+                  </View>
+                </View>
+                
+                {latestSummary.stats?.weightChange !== null && (
+                  <View style={[styles.summaryWeightChange, { backgroundColor: latestSummary.stats.weightChange <= 0 ? 'rgba(6,214,160,0.1)' : 'rgba(239,71,111,0.1)' }]}>
+                    <MaterialCommunityIcons name="scale-bathroom" size={20} color={latestSummary.stats.weightChange <= 0 ? colors.success : colors.error} />
+                    <Text style={[styles.summaryWeightText, { color: latestSummary.stats.weightChange <= 0 ? colors.success : colors.error }]}>
+                      {latestSummary.stats.weightChange > 0 ? '+' : ''}{latestSummary.stats.weightChange.toFixed(1)} lbs this week
+                    </Text>
+                  </View>
+                )}
+                
+                {latestSummary.stats?.workoutStreak > 1 && (
+                  <View style={[styles.summaryStreakBadge, { backgroundColor: 'rgba(255,107,107,0.1)' }]}>
+                    <MaterialCommunityIcons name="fire" size={20} color="#FF6B6B" />
+                    <Text style={[styles.summaryStreakText, { color: '#FF6B6B' }]}>
+                      {latestSummary.stats.workoutStreak} day workout streak!
+                    </Text>
+                  </View>
+                )}
+                
+                {/* AI Summary Text */}
+                <View style={styles.summaryTextBox}>
+                  <Text style={styles.summaryTextTitle}>AI Insights</Text>
+                  <Text style={styles.summaryText}>{latestSummary.summary}</Text>
+                </View>
+                
+                <Text style={styles.summaryMeta}>
+                  {latestSummary.weekStart} to {latestSummary.weekEnd}
+                  {latestSummary.isAutoGenerated && ' • Auto-generated'}
+                </Text>
+              </ScrollView>
+            )}
+            
+            <TouchableOpacity style={styles.closeSummaryBtn} onPress={() => setShowSummaryModal(false)}>
+              <Text style={styles.closeSummaryBtnText}>Close</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -282,4 +982,42 @@ const createStyles = (colors: any) => StyleSheet.create({
   themeHint: { ...typography.bodySm, color: colors.textTertiary, paddingHorizontal: spacing.md, paddingBottom: spacing.md, marginTop: -8 },
   disclaimerCard: { flexDirection: 'row', backgroundColor: 'rgba(255,209,102,0.1)', borderRadius: 12, padding: spacing.md, marginTop: spacing.lg, gap: 10 },
   disclaimerText: { ...typography.bodySm, color: colors.textTertiary, flex: 1, fontSize: 11, lineHeight: 16 },
+  // Cloud Sync styles
+  syncStatusRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: spacing.md, minHeight: 60 },
+  syncTimeText: { ...typography.bodySm, color: colors.textTertiary, fontSize: 11, marginTop: 2 },
+  syncHint: { ...typography.bodySm, color: colors.textTertiary, fontSize: 12, textAlign: 'center', marginBottom: spacing.md, paddingHorizontal: spacing.md },
+  noDataText: { ...typography.bodySm, color: colors.textTertiary, fontSize: 12 },
+  // Workout recap styles
+  recapCard: { backgroundColor: colors.surface, borderRadius: 16, borderWidth: 1, borderColor: colors.border, padding: spacing.md, marginBottom: spacing.md },
+  recapRow: { flexDirection: 'row', justifyContent: 'space-around' },
+  recapItem: { alignItems: 'center' },
+  recapValue: { ...typography.h2, color: colors.textPrimary, marginTop: 4 },
+  recapLabel: { ...typography.caption, color: colors.textTertiary },
+  recapBadge: { backgroundColor: colors.accent, paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, alignSelf: 'center', marginTop: spacing.md },
+  recapBadgeText: { ...typography.bodySm, color: colors.primaryForeground, fontWeight: '700' },
+  // PIN Modal styles
+  modalOverlay: { flex: 1, backgroundColor: colors.overlay, justifyContent: 'flex-end' },
+  pinModal: { backgroundColor: colors.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: spacing.lg, paddingBottom: 40 },
+  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.lg },
+  modalTitle: { ...typography.h2, color: colors.textPrimary },
+  pinLabel: { ...typography.caption, color: colors.textTertiary, marginBottom: spacing.xs, marginTop: spacing.sm },
+  pinInput: { height: 52, backgroundColor: colors.secondary, borderRadius: 12, borderWidth: 1, borderColor: colors.border, paddingHorizontal: spacing.md, color: colors.textPrimary, fontSize: 24, textAlign: 'center', letterSpacing: 8 },
+  savePinBtn: { backgroundColor: colors.primary, height: 52, borderRadius: 26, justifyContent: 'center', alignItems: 'center', marginTop: spacing.lg },
+  savePinBtnText: { ...typography.bodyBase, color: colors.primaryForeground, fontWeight: '700' },
+  // Summary Modal styles
+  summaryModal: { backgroundColor: colors.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, height: '85%' },
+  summaryStatsGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', marginBottom: spacing.md },
+  summaryStatItem: { width: '48%', backgroundColor: colors.secondary, borderRadius: 12, padding: spacing.md, alignItems: 'center', marginBottom: spacing.sm },
+  summaryStatValue: { ...typography.h2, color: colors.textPrimary, marginTop: 4 },
+  summaryStatLabel: { ...typography.caption, color: colors.textTertiary, marginTop: 2 },
+  summaryWeightChange: { flexDirection: 'row', alignItems: 'center', padding: spacing.md, borderRadius: 12, gap: 10, marginBottom: spacing.sm },
+  summaryWeightText: { ...typography.bodyBase, fontWeight: '600' },
+  summaryStreakBadge: { flexDirection: 'row', alignItems: 'center', padding: spacing.md, borderRadius: 12, gap: 10, marginBottom: spacing.md },
+  summaryStreakText: { ...typography.bodyBase, fontWeight: '600' },
+  summaryTextBox: { backgroundColor: colors.secondary, borderRadius: 12, padding: spacing.md, marginBottom: spacing.md },
+  summaryTextTitle: { ...typography.caption, color: colors.accent, marginBottom: spacing.sm },
+  summaryText: { ...typography.bodyBase, color: colors.textSecondary, lineHeight: 22 },
+  summaryMeta: { ...typography.caption, color: colors.textTertiary, textAlign: 'center', marginBottom: spacing.md },
+  closeSummaryBtn: { backgroundColor: colors.primary, height: 52, borderRadius: 26, justifyContent: 'center', alignItems: 'center', margin: spacing.md },
+  closeSummaryBtnText: { ...typography.bodyBase, color: colors.primaryForeground, fontWeight: '700' },
 });

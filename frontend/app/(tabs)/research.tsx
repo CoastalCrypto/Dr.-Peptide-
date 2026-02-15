@@ -14,12 +14,27 @@ type AddType = 'peptide' | 'medication' | null;
 
 const ROUTE_OPTIONS = ['Subcutaneous', 'Intramuscular', 'Oral', 'Nasal', 'Topical', 'IV', 'Sublingual'];
 
+// Goal icons mapping for "Browse by Goal"
+const GOAL_ICONS: Record<string, string> = {
+  'Fat Loss': 'fire',
+  'Muscle Growth': 'dumbbell',
+  'Recovery': 'heart-pulse',
+  'Anti-Aging': 'clock-time-eight-outline',
+  'Cognitive': 'brain',
+  'Sleep': 'sleep',
+  'Skin/Hair': 'face-woman-shimmer',
+  'Immune': 'shield-plus',
+  'Sexual Health': 'heart',
+  'Other': 'dots-horizontal-circle',
+};
+
 export default function ResearchScreen() {
   const { colors } = useTheme();
   const router = useRouter();
   const [search, setSearch] = useState('');
   const [activeTab, setActiveTab] = useState<Tab>('peptides');
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
+  const [showGoalFilter, setShowGoalFilter] = useState(false);
   const [customPeptides, setCustomPeptides] = useState<Peptide[]>([]);
   const [customMeds, setCustomMeds] = useState<Medication[]>([]);
   const [showAdd, setShowAdd] = useState<AddType>(null);
@@ -29,6 +44,11 @@ export default function ResearchScreen() {
   const [webSearchQuery, setWebSearchQuery] = useState('');
   const [webSearchResult, setWebSearchResult] = useState<string | null>(null);
   const [webSearchLoading, setWebSearchLoading] = useState(false);
+  
+  // Comparison state
+  const [compareMode, setCompareMode] = useState(false);
+  const [selectedForCompare, setSelectedForCompare] = useState<string[]>([]);
+  const [showCompareModal, setShowCompareModal] = useState(false);
 
   // Custom peptide form
   const [cpName, setCpName] = useState('');
@@ -68,19 +88,32 @@ export default function ResearchScreen() {
   const allPeptides = [...bundledPeptides, ...customPeptides];
   const allMeds = [...bundledMeds, ...customMeds];
 
+  // Enhanced full-text search
   const filteredPeptides = allPeptides.filter(p => {
-    const matchSearch = !search || p.name.toLowerCase().includes(search.toLowerCase()) ||
-      p.aliases.some(a => a.toLowerCase().includes(search.toLowerCase())) ||
-      p.description.toLowerCase().includes(search.toLowerCase());
+    const searchLower = search.toLowerCase();
+    const matchSearch = !search || 
+      p.name.toLowerCase().includes(searchLower) ||
+      p.aliases.some(a => a.toLowerCase().includes(searchLower)) ||
+      p.description.toLowerCase().includes(searchLower) ||
+      p.mechanism?.toLowerCase().includes(searchLower) ||
+      p.categories.some(c => c.toLowerCase().includes(searchLower)) ||
+      p.routes?.some(r => r.toLowerCase().includes(searchLower)) ||
+      p.sideEffects?.common?.some(s => s.toLowerCase().includes(searchLower)) ||
+      p.contraindications?.some(c => c.toLowerCase().includes(searchLower));
     const matchCat = !activeCategory || p.categories.includes(activeCategory);
     return matchSearch && matchCat;
   });
 
+  // Enhanced medication search
   const filteredMeds = allMeds.filter(m => {
     const s = search.toLowerCase();
-    return !search || m.genericName.toLowerCase().includes(s) ||
+    return !search || 
+      m.genericName.toLowerCase().includes(s) ||
       m.brandNames.some(b => b.toLowerCase().includes(s)) ||
-      m.drugClass.toLowerCase().includes(s);
+      m.drugClass.toLowerCase().includes(s) ||
+      m.uses?.some(u => u.toLowerCase().includes(s)) ||
+      m.sideEffects?.some(se => se.toLowerCase().includes(s)) ||
+      m.contraindications?.some(c => c.toLowerCase().includes(s));
   });
 
   // AI Web Search function
@@ -224,6 +257,31 @@ export default function ResearchScreen() {
           <Text style={styles.aiSearchBtnText}>AI Web Search</Text>
           <MaterialCommunityIcons name="arrow-right" size={18} color={colors.primaryForeground} />
         </TouchableOpacity>
+        
+        {/* Compare Button */}
+        {activeTab === 'peptides' && (
+          <View style={styles.compareRow}>
+            <TouchableOpacity 
+              testID="compare-toggle-btn" 
+              style={[styles.compareBtn, compareMode && styles.compareBtnActive]} 
+              onPress={() => { setCompareMode(!compareMode); setSelectedForCompare([]); }}
+            >
+              <MaterialCommunityIcons name="compare" size={18} color={compareMode ? colors.primaryForeground : colors.accent} />
+              <Text style={[styles.compareBtnText, compareMode && styles.compareBtnTextActive]}>
+                {compareMode ? 'Cancel Compare' : 'Compare Peptides'}
+              </Text>
+            </TouchableOpacity>
+            {selectedForCompare.length >= 2 && (
+              <TouchableOpacity 
+                testID="view-compare-btn"
+                style={styles.viewCompareBtn} 
+                onPress={() => setShowCompareModal(true)}
+              >
+                <Text style={styles.viewCompareBtnText}>Compare ({selectedForCompare.length})</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
 
         <View style={styles.tabs}>
           <TouchableOpacity testID="tab-peptides" style={[styles.tab, activeTab === 'peptides' && styles.tabActive]} onPress={() => setActiveTab('peptides')}>
@@ -235,16 +293,46 @@ export default function ResearchScreen() {
         </View>
 
         {activeTab === 'peptides' && (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.catRow}>
-            <TouchableOpacity style={[styles.catChip, !activeCategory && styles.catChipActive]} onPress={() => setActiveCategory(null)}>
-              <Text style={[styles.catChipText, !activeCategory && styles.catChipTextActive]}>All</Text>
+          <>
+            {/* Browse by Goal Toggle */}
+            <TouchableOpacity 
+              testID="browse-by-goal-toggle"
+              style={[styles.goalToggleBtn, activeCategory && styles.goalToggleActive]}
+              onPress={() => setShowGoalFilter(!showGoalFilter)}
+            >
+              <MaterialCommunityIcons name="target" size={18} color={activeCategory ? colors.primaryForeground : colors.accent} />
+              <Text style={[styles.goalToggleText, activeCategory && styles.goalToggleTextActive]}>
+                {activeCategory ? `Goal: ${activeCategory}` : 'Browse by Goal'}
+              </Text>
+              <MaterialCommunityIcons name={showGoalFilter ? 'chevron-up' : 'chevron-down'} size={18} color={activeCategory ? colors.primaryForeground : colors.textTertiary} />
             </TouchableOpacity>
-            {GOAL_CATEGORIES.map(cat => (
-              <TouchableOpacity key={cat} style={[styles.catChip, activeCategory === cat && styles.catChipActive]} onPress={() => setActiveCategory(activeCategory === cat ? null : cat)}>
-                <Text style={[styles.catChipText, activeCategory === cat && styles.catChipTextActive]}>{cat}</Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
+            
+            {showGoalFilter && (
+              <View style={styles.goalGrid}>
+                <TouchableOpacity 
+                  style={[styles.goalChip, !activeCategory && styles.goalChipActive]} 
+                  onPress={() => { setActiveCategory(null); setShowGoalFilter(false); }}
+                >
+                  <MaterialCommunityIcons name="view-grid" size={20} color={!activeCategory ? colors.primaryForeground : colors.textSecondary} />
+                  <Text style={[styles.goalChipText, !activeCategory && styles.goalChipTextActive]}>All</Text>
+                </TouchableOpacity>
+                {GOAL_CATEGORIES.map(cat => (
+                  <TouchableOpacity 
+                    key={cat} 
+                    style={[styles.goalChip, activeCategory === cat && styles.goalChipActive]} 
+                    onPress={() => { setActiveCategory(activeCategory === cat ? null : cat); setShowGoalFilter(false); }}
+                  >
+                    <MaterialCommunityIcons 
+                      name={(GOAL_ICONS[cat] || 'help-circle') as any} 
+                      size={20} 
+                      color={activeCategory === cat ? colors.primaryForeground : colors.textSecondary} 
+                    />
+                    <Text style={[styles.goalChipText, activeCategory === cat && styles.goalChipTextActive]}>{cat}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+          </>
         )}
 
         {activeTab === 'peptides' ? (
@@ -252,36 +340,58 @@ export default function ResearchScreen() {
             data={filteredPeptides}
             keyExtractor={item => item.id}
             contentContainerStyle={styles.list}
-            renderItem={({ item }) => (
-              <TouchableOpacity testID={`peptide-${item.id}`} style={styles.card} onPress={() => router.push(`/peptide/${item.id}`)}>
-                <View style={styles.cardHeader}>
-                  <View style={styles.cardNameRow}>
-                    <Text style={styles.cardName}>{item.name}</Text>
-                    {item.isCustom && <View style={styles.customBadge}><Text style={styles.customBadgeText}>Custom</Text></View>}
-                  </View>
-                  <View style={styles.cardActions}>
-                    {item.isCustom && (
-                      <TouchableOpacity testID={`delete-${item.id}`} onPress={() => deleteCustomItem(item.id, 'peptide')} style={styles.deleteBtn}>
-                        <MaterialCommunityIcons name="delete-outline" size={20} color={colors.error} />
-                      </TouchableOpacity>
-                    )}
-                    <MaterialCommunityIcons name="chevron-right" size={24} color={colors.textTertiary} />
-                  </View>
-                </View>
-                <View style={styles.cardTags}>
-                  {item.categories.map(cat => (
-                    <View key={cat} style={styles.tag}>
-                      <Text style={styles.tagText}>{cat}</Text>
+            renderItem={({ item }) => {
+              const isSelected = selectedForCompare.includes(item.id);
+              return (
+                <TouchableOpacity 
+                  testID={`peptide-${item.id}`} 
+                  style={[styles.card, compareMode && isSelected && styles.cardSelected]} 
+                  onPress={() => {
+                    if (compareMode) {
+                      if (isSelected) {
+                        setSelectedForCompare(prev => prev.filter(id => id !== item.id));
+                      } else if (selectedForCompare.length < 3) {
+                        setSelectedForCompare(prev => [...prev, item.id]);
+                      }
+                    } else {
+                      router.push(`/peptide/${item.id}`);
+                    }
+                  }}
+                >
+                  <View style={styles.cardHeader}>
+                    <View style={styles.cardNameRow}>
+                      {compareMode && (
+                        <View style={[styles.checkbox, isSelected && styles.checkboxSelected]}>
+                          {isSelected && <MaterialCommunityIcons name="check" size={14} color={colors.primaryForeground} />}
+                        </View>
+                      )}
+                      <Text style={styles.cardName}>{item.name}</Text>
+                      {item.isCustom && <View style={styles.customBadge}><Text style={styles.customBadgeText}>Custom</Text></View>}
                     </View>
-                  ))}
-                </View>
-                <Text style={styles.cardDesc} numberOfLines={2}>{item.description}</Text>
-                <View style={styles.cardMeta}>
-                  <Text style={styles.metaText}>{item.routes.join(' · ')}</Text>
+                    <View style={styles.cardActions}>
+                      {item.isCustom && !compareMode && (
+                        <TouchableOpacity testID={`delete-${item.id}`} onPress={() => deleteCustomItem(item.id, 'peptide')} style={styles.deleteBtn}>
+                          <MaterialCommunityIcons name="delete-outline" size={20} color={colors.error} />
+                        </TouchableOpacity>
+                      )}
+                      {!compareMode && <MaterialCommunityIcons name="chevron-right" size={24} color={colors.textTertiary} />}
+                    </View>
+                  </View>
+                  <View style={styles.cardTags}>
+                    {item.categories.map(cat => (
+                      <View key={cat} style={styles.tag}>
+                        <Text style={styles.tagText}>{cat}</Text>
+                      </View>
+                    ))}
+                  </View>
+                  <Text style={styles.cardDesc} numberOfLines={2}>{item.description}</Text>
+                  <View style={styles.cardMeta}>
+                    <Text style={styles.metaText}>{item.routes.join(' · ')}</Text>
                   <Text style={styles.metaText}>{item.frequency}</Text>
                 </View>
               </TouchableOpacity>
-            )}
+              );
+            }}
             ListEmptyComponent={
               <View style={styles.empty}>
                 <MaterialCommunityIcons name="flask-empty" size={48} color={colors.textTertiary} />
@@ -326,6 +436,93 @@ export default function ResearchScreen() {
           />
         )}
       </View>
+
+      {/* Compare Peptides Modal */}
+      <Modal visible={showCompareModal} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <View style={styles.compareModal}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Compare Peptides</Text>
+              <TouchableOpacity onPress={() => setShowCompareModal(false)}>
+                <MaterialCommunityIcons name="close" size={24} color={colors.textTertiary} />
+              </TouchableOpacity>
+            </View>
+            
+            <ScrollView style={styles.compareContent}>
+              {/* Header row */}
+              <View style={styles.compareRow}>
+                <Text style={[styles.compareLabel, styles.compareLabelFirst]}>Attribute</Text>
+                {selectedForCompare.map(id => {
+                  const p = allPeptides.find(p => p.id === id);
+                  return <Text key={id} style={styles.compareHeader}>{p?.name || 'Unknown'}</Text>;
+                })}
+              </View>
+              
+              {/* Categories */}
+              <View style={styles.compareRow}>
+                <Text style={styles.compareLabel}>Goals</Text>
+                {selectedForCompare.map(id => {
+                  const p = allPeptides.find(p => p.id === id);
+                  return <Text key={id} style={styles.compareValue}>{p?.categories.join(', ') || '-'}</Text>;
+                })}
+              </View>
+              
+              {/* Routes */}
+              <View style={styles.compareRow}>
+                <Text style={styles.compareLabel}>Routes</Text>
+                {selectedForCompare.map(id => {
+                  const p = allPeptides.find(p => p.id === id);
+                  return <Text key={id} style={styles.compareValue}>{p?.routes.join(', ') || '-'}</Text>;
+                })}
+              </View>
+              
+              {/* Frequency */}
+              <View style={styles.compareRow}>
+                <Text style={styles.compareLabel}>Frequency</Text>
+                {selectedForCompare.map(id => {
+                  const p = allPeptides.find(p => p.id === id);
+                  return <Text key={id} style={styles.compareValue}>{p?.frequency || '-'}</Text>;
+                })}
+              </View>
+              
+              {/* Dosage */}
+              <View style={styles.compareRow}>
+                <Text style={styles.compareLabel}>Dosage (Low)</Text>
+                {selectedForCompare.map(id => {
+                  const p = allPeptides.find(p => p.id === id);
+                  return <Text key={id} style={styles.compareValue}>{p?.dosage?.low || '-'}</Text>;
+                })}
+              </View>
+              
+              {/* Cycle Length */}
+              <View style={styles.compareRow}>
+                <Text style={styles.compareLabel}>Cycle</Text>
+                {selectedForCompare.map(id => {
+                  const p = allPeptides.find(p => p.id === id);
+                  return <Text key={id} style={styles.compareValue}>{p?.cycleLength || '-'}</Text>;
+                })}
+              </View>
+              
+              {/* Description */}
+              <View style={styles.compareRowDesc}>
+                <Text style={styles.compareLabel}>Description</Text>
+                {selectedForCompare.map(id => {
+                  const p = allPeptides.find(p => p.id === id);
+                  return <Text key={id} style={styles.compareDesc}>{p?.description || '-'}</Text>;
+                })}
+              </View>
+            </ScrollView>
+            
+            <TouchableOpacity 
+              testID="close-compare-btn"
+              style={styles.closeCompareBtn} 
+              onPress={() => { setShowCompareModal(false); setCompareMode(false); setSelectedForCompare([]); }}
+            >
+              <Text style={styles.closeCompareBtnText}>Done</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
 
       {/* AI Web Search Modal */}
       <Modal visible={showWebSearch} animationType="slide" transparent>
@@ -634,4 +831,36 @@ const createStyles = (colors: any) => StyleSheet.create({
   aiEmptyState: { alignItems: 'center', paddingVertical: spacing.xxl },
   aiEmptyText: { ...typography.bodyLg, color: colors.textSecondary, marginTop: spacing.md },
   aiEmptySubtext: { ...typography.bodySm, color: colors.textTertiary, marginTop: spacing.xs, textAlign: 'center', paddingHorizontal: spacing.lg },
+  // Compare mode styles
+  compareRow: { flexDirection: 'row', marginBottom: spacing.md, paddingHorizontal: spacing.sm },
+  viewCompareBtn: { backgroundColor: colors.accent, paddingHorizontal: 16, paddingVertical: 8, borderRadius: 16 },
+  viewCompareBtnText: { ...typography.bodySm, color: colors.primaryForeground, fontWeight: '700' },
+  compareBtn: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 12, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.accent },
+  compareBtnActive: { backgroundColor: colors.accent },
+  compareBtnText: { ...typography.bodySm, color: colors.accent },
+  compareBtnTextActive: { color: colors.primaryForeground },
+  cardSelected: { borderColor: colors.accent, borderWidth: 2, backgroundColor: 'rgba(76,201,240,0.1)' },
+  checkbox: { width: 22, height: 22, borderRadius: 6, borderWidth: 2, borderColor: colors.border, justifyContent: 'center', alignItems: 'center' },
+  checkboxSelected: { backgroundColor: colors.accent, borderColor: colors.accent },
+  // Compare modal styles
+  compareModal: { backgroundColor: colors.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: '85%', padding: spacing.lg },
+  compareContent: { flex: 1 },
+  compareLabel: { ...typography.caption, color: colors.textTertiary, width: 90 },
+  compareLabelFirst: { fontWeight: '700' },
+  compareHeader: { ...typography.bodySm, color: colors.accent, fontWeight: '700', flex: 1, textAlign: 'center' },
+  compareValue: { ...typography.bodySm, color: colors.textPrimary, flex: 1, textAlign: 'center' },
+  compareRowDesc: { marginTop: spacing.md, paddingTop: spacing.md, borderTopWidth: 1, borderTopColor: colors.border },
+  compareDesc: { ...typography.bodySm, color: colors.textSecondary, marginTop: spacing.sm, lineHeight: 18 },
+  closeCompareBtn: { backgroundColor: colors.primary, height: 52, borderRadius: 26, justifyContent: 'center', alignItems: 'center', marginTop: spacing.lg },
+  closeCompareBtnText: { ...typography.bodyBase, color: colors.primaryForeground, fontWeight: '700' },
+  // Browse by Goal styles
+  goalToggleBtn: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: 12, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, marginHorizontal: spacing.md, marginBottom: spacing.sm },
+  goalToggleActive: { backgroundColor: colors.accent, borderColor: colors.accent },
+  goalToggleText: { ...typography.bodySm, color: colors.textPrimary, flex: 1 },
+  goalToggleTextActive: { color: colors.primaryForeground, fontWeight: '600' },
+  goalGrid: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: spacing.md, marginBottom: spacing.sm, gap: 8 },
+  goalChip: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: 20, paddingHorizontal: 12, paddingVertical: 8 },
+  goalChipActive: { backgroundColor: colors.accent, borderColor: colors.accent },
+  goalChipText: { ...typography.bodySm, color: colors.textSecondary },
+  goalChipTextActive: { color: colors.primaryForeground, fontWeight: '600' },
 });

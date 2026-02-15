@@ -1,0 +1,46 @@
+{
+  "summary": "Iteration 11: Tested new features - AI Weekly Summary section with Generate button, Notifications settings with 3 toggles (Dose, Journal, Weekly), Browse by Goal filtering in Research tab, and enhanced full-text search. All features render correctly and function as expected.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/test_reports/iteration_11.json"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "WeeklySummaryService and NotificationServiceV2 are well-implemented with proper error handling",
+    "Browse by Goal uses proper GOAL_CATEGORIES constant from peptides.ts",
+    "Full-text search implementation in research.tsx correctly searches across name, aliases, description, mechanism, and categories"
+  ],
+  "updated_files": [],
+  "success_rate": {
+    "backend": "N/A (frontend-only testing)",
+    "frontend": "100% - All 8 features verified"
+  },
+  "seed_data_creation": "None required",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "New features all working: 1) AI Weekly Summary section in Profile with 'Generate New Summary' button and 'Latest Summary' display (auto-generated on 2/15/2026), 2) Notifications section with 3 toggles: Dose Reminders, Daily Journal Reminder (8:00 PM), Weekly Summary Alert (Sun 10:00 AM), 3) Note displayed: 'Push notifications are only available on mobile devices', 4) Browse by Goal collapsible toggle in Research with 10 goal categories with icons, 5) Goal filtering works (Sleep filter shows 1 result: DSIP), 6) Full-text search works across peptide fields (searching 'healing' returns BPC-157, TB-500, KPV, GHK-Cu)",
+  "features_verified": {
+    "profile_ai_summary_section": "PASS - AI Weekly Summary section renders with 'Latest Summary' showing generated date and 'Generate New Summary' button",
+    "profile_ai_summary_generate_btn": "PASS - testID='ai-summary-btn' found and clickable",
+    "profile_notifications_section": "PASS - Notifications section renders with proper heading",
+    "profile_dose_reminders_toggle": "PASS - testID='dose-reminders-switch' found with toggle enabled by default",
+    "profile_journal_reminder_toggle": "PASS - testID='journal-reminder-switch' found with 'Every day at 8:00 PM' subtitle",
+    "profile_weekly_summary_toggle": "PASS - testID='weekly-summary-switch' found with 'Every Sun at 10:00 AM' subtitle",
+    "profile_mobile_note": "PASS - Note 'Push notifications are only available on mobile devices' displayed on web",
+    "research_browse_by_goal_toggle": "PASS - testID='browse-by-goal-toggle' renders as collapsible toggle",
+    "research_goal_categories_icons": "PASS - Expanded shows: All, Weight Loss, Muscle Growth, Healing & Recovery, Anti-Aging, Cognitive Enhancement, Immune Support, Sleep, Reproductive Health, Skin & Hair - all with icons",
+    "research_goal_filter_works": "PASS - Selecting Sleep filters to 1 peptide (DSIP), button shows 'Goal: Sleep'",
+    "research_full_text_search": "PASS - Searching 'healing' returns 5 peptides matching description/mechanism text"
+  },
+  "test_credentials": {
+    "note": "Used localStorage bypass for waiver/onboarding"
+  }
+}

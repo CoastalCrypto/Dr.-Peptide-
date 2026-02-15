@@ -1,19 +1,47 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Platform } from 'react-native';
+
+// Helper to check if we're on web platform (checked dynamically for proper hydration)
+const isWebPlatform = () => {
+  return Platform.OS === 'web' && typeof window !== 'undefined' && window.localStorage;
+};
 
 export const Storage = {
   get: async <T>(key: string): Promise<T | null> => {
     try {
+      if (isWebPlatform()) {
+        const v = window.localStorage.getItem(key);
+        return v ? JSON.parse(v) : null;
+      }
       const v = await AsyncStorage.getItem(key);
       return v ? JSON.parse(v) : null;
-    } catch {
+    } catch (err) {
+      console.warn('Storage.get error:', err);
       return null;
     }
   },
   set: async (key: string, value: any): Promise<void> => {
-    await AsyncStorage.setItem(key, JSON.stringify(value));
+    try {
+      const jsonValue = JSON.stringify(value);
+      if (isWebPlatform()) {
+        window.localStorage.setItem(key, jsonValue);
+        return;
+      }
+      await AsyncStorage.setItem(key, jsonValue);
+    } catch (err) {
+      console.warn('Storage.set error:', err);
+    }
   },
   remove: async (key: string): Promise<void> => {
-    await AsyncStorage.removeItem(key);
+    try {
+      if (isWebPlatform()) {
+        window.localStorage.removeItem(key);
+        return;
+      }
+      await AsyncStorage.removeItem(key);
+    } catch (err) {
+      console.warn('Storage.remove error:', err);
+    }
   },
 };
 
@@ -32,4 +60,9 @@ export const KEYS = {
   CUSTOM_MEDS: 'peptrack_custom_meds',
   THEME_MODE: 'peptrack_theme_mode',
   RECURRING_ITEMS: 'peptrack_recurring_items',
+  REMINDERS: 'peptrack_reminders',
+  NOTIFICATIONS_ENABLED: 'peptrack_notifications_enabled',
+  INJECTION_SITES: 'peptrack_injection_sites',
+  AI_SUMMARIES: 'peptrack_ai_summaries',
+  WORKOUT_HISTORY: 'peptrack_workout_history',
 };

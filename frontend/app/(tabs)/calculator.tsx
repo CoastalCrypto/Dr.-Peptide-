@@ -1,11 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, TextInput, Modal } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, TextInput, Modal, Alert, Platform } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Animated, { useSharedValue, useAnimatedStyle, withTiming } from 'react-native-reanimated';
 import { useTheme } from '../../src/context/ThemeContext';
 import { typography, spacing, DISCLAIMER } from '../../src/theme';
 import { Storage, KEYS } from '../../src/utils/storage';
-import { useLocalSearchParams, useFocusEffect } from 'expo-router';
+import { useLocalSearchParams, useFocusEffect, useRouter } from 'expo-router';
+import { RecurringItem, DAYS_OF_WEEK } from '../../src/types/recurring';
 
 const SYRINGE_OPTIONS = [
   { label: '0.3 mL (30u)', ml: 0.3, units: 30 },
@@ -24,6 +25,7 @@ const DOSE_OPTIONS = [
 interface Preset {
   id: string;
   name: string;
+  peptideName?: string;
   syringeIdx: number;
   vialMg: number;
   bacWaterMl: number;
@@ -60,6 +62,7 @@ function SyringeVisual({ fillPct, units, unitsToDraw, colors }: { fillPct: numbe
 
 export default function CalculatorScreen() {
   const { colors } = useTheme();
+  const router = useRouter();
   const params = useLocalSearchParams<{ vialMg?: string; doseMcg?: string; bacWaterMl?: string }>();
   const [syringeIdx, setSyringeIdx] = useState(2);
   const [vialMg, setVialMg] = useState(10);
@@ -72,6 +75,11 @@ export default function CalculatorScreen() {
   const [presets, setPresets] = useState<Preset[]>([]);
   const [presetName, setPresetName] = useState('');
   const [showSavePreset, setShowSavePreset] = useState(false);
+  const [showScheduleModal, setShowScheduleModal] = useState(false);
+  const [scheduleName, setScheduleName] = useState('');
+  const [scheduleFrequency, setScheduleFrequency] = useState<'daily' | 'weekly'>('daily');
+  const [scheduleDays, setScheduleDays] = useState<number[]>([0, 1, 2, 3, 4, 5, 6]);
+  const [scheduleTime, setScheduleTime] = useState('Morning');
 
   useEffect(() => {
     if (params.vialMg) setVialMg(parseFloat(params.vialMg));
@@ -109,6 +117,72 @@ export default function CalculatorScreen() {
     setDoseMcg(p.doseMcg);
   };
 
+  const deletePreset = async (presetId: string) => {
+    Alert.alert('Delete Preset', 'Are you sure you want to delete this preset?', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Delete', style: 'destructive', onPress: async () => {
+        const updated = presets.filter(p => p.id !== presetId);
+        await Storage.set(KEYS.CALCULATOR_PRESETS, updated);
+        setPresets(updated);
+      }},
+    ]);
+  };
+
+  const addToSchedule = async () => {
+    if (!scheduleName.trim()) {
+      Alert.alert('Error', 'Please enter a name for the scheduled item');
+      return;
+    }
+
+    const doseLabel = doseMcg >= 1000 ? `${doseMcg / 1000} mg` : `${doseMcg} mcg`;
+    const newItem: Omit<RecurringItem, 'item_id' | 'is_active' | 'created_at'> = {
+      name: scheduleName,
+      type: 'peptide',
+      dosage_amount: doseMcg,
+      dosage_unit: 'mcg',
+      route: 'Subcutaneous',
+      recurrence_type: scheduleFrequency,
+      recurrence_days: scheduleDays,
+      recurrence_interval: 1,
+      times_of_day: [scheduleTime],
+      start_date: new Date().toISOString().split('T')[0],
+      notes: `Calculator: ${vialMg}mg vial, ${bacWaterMl}mL BAC water, draw ${unitsToDraw.toFixed(1)} units`,
+      category: 'peptide',
+      reminder_enabled: true,
+    };
+
+    try {
+      // Save to local storage (for offline use)
+      const existingItems = await Storage.get<RecurringItem[]>(KEYS.RECURRING_ITEMS) || [];
+      const localItem: RecurringItem = {
+        ...newItem,
+        item_id: `local_${Date.now()}`,
+        is_active: true,
+        created_at: new Date().toISOString(),
+      };
+      await Storage.set(KEYS.RECURRING_ITEMS, [...existingItems, localItem]);
+
+      setShowScheduleModal(false);
+      setScheduleName('');
+      Alert.alert('Success', `${scheduleName} has been added to your schedule!`, [
+        { text: 'View Schedule', onPress: () => router.push('/') },
+        { text: 'OK' },
+      ]);
+    } catch (error) {
+      Alert.alert('Error', 'Failed to add to schedule. Please try again.');
+    }
+  };
+
+  const toggleScheduleDay = (day: number) => {
+    if (scheduleDays.includes(day)) {
+      if (scheduleDays.length > 1) {
+        setScheduleDays(scheduleDays.filter(d => d !== day));
+      }
+    } else {
+      setScheduleDays([...scheduleDays, day].sort());
+    }
+  };
+
   const applyCustom = () => {
     if (showCustomModal === 'vial' && customVial) setVialMg(parseFloat(customVial));
     if (showCustomModal === 'water' && customWater) setBacWaterMl(parseFloat(customWater));
@@ -120,13 +194,24 @@ export default function CalculatorScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      <ScrollView 
+        style={styles.container} 
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={true}
+        bounces={true}
+        nestedScrollEnabled={true}
+      >
         <Text style={styles.title}>Peptide Calculator</Text>
 
         {presets.length > 0 && (
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.presetsRow}>
             {presets.map(p => (
-              <TouchableOpacity key={p.id} style={styles.presetChip} onPress={() => loadPreset(p)}>
+              <TouchableOpacity 
+                key={p.id} 
+                style={styles.presetChip} 
+                onPress={() => loadPreset(p)}
+                onLongPress={() => deletePreset(p.id)}
+              >
                 <MaterialCommunityIcons name="lightning-bolt" size={14} color={colors.accent} />
                 <Text style={styles.presetChipText}>{p.name}</Text>
               </TouchableOpacity>
@@ -222,6 +307,11 @@ export default function CalculatorScreen() {
           <Text style={styles.savePresetText}>Save as Preset</Text>
         </TouchableOpacity>
 
+        <TouchableOpacity testID="add-to-schedule-btn" style={styles.addToScheduleBtn} onPress={() => setShowScheduleModal(true)}>
+          <MaterialCommunityIcons name="calendar-plus" size={20} color={colors.accent} />
+          <Text style={styles.addToScheduleText}>Add to Schedule</Text>
+        </TouchableOpacity>
+
         <Text style={styles.disclaimer}>{DISCLAIMER}</Text>
       </ScrollView>
 
@@ -261,6 +351,88 @@ export default function CalculatorScreen() {
           </View>
         </View>
       </Modal>
+
+      <Modal visible={showScheduleModal} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <ScrollView contentContainerStyle={styles.scheduleModalContent}>
+            <View style={styles.modal}>
+              <Text style={styles.modalTitle}>Add to Schedule</Text>
+              
+              <Text style={styles.scheduleLabel}>Peptide/Medication Name</Text>
+              <TextInput 
+                testID="schedule-name-input" 
+                style={styles.input} 
+                placeholder="e.g., BPC-157" 
+                placeholderTextColor={colors.textTertiary} 
+                value={scheduleName} 
+                onChangeText={setScheduleName} 
+              />
+
+              <Text style={styles.scheduleLabel}>Current Dose</Text>
+              <View style={styles.dosePreview}>
+                <Text style={styles.dosePreviewText}>
+                  {doseMcg >= 1000 ? `${doseMcg / 1000} mg` : `${doseMcg} mcg`} • Draw {unitsToDraw.toFixed(1)} units
+                </Text>
+              </View>
+
+              <Text style={styles.scheduleLabel}>Frequency</Text>
+              <View style={styles.frequencyRow}>
+                <TouchableOpacity 
+                  style={[styles.frequencyBtn, scheduleFrequency === 'daily' && styles.frequencyBtnActive]} 
+                  onPress={() => { setScheduleFrequency('daily'); setScheduleDays([0,1,2,3,4,5,6]); }}
+                >
+                  <Text style={[styles.frequencyBtnText, scheduleFrequency === 'daily' && styles.frequencyBtnTextActive]}>Daily</Text>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={[styles.frequencyBtn, scheduleFrequency === 'weekly' && styles.frequencyBtnActive]} 
+                  onPress={() => setScheduleFrequency('weekly')}
+                >
+                  <Text style={[styles.frequencyBtnText, scheduleFrequency === 'weekly' && styles.frequencyBtnTextActive]}>Weekly</Text>
+                </TouchableOpacity>
+              </View>
+
+              {scheduleFrequency === 'weekly' && (
+                <>
+                  <Text style={styles.scheduleLabel}>Days</Text>
+                  <View style={styles.daysRow}>
+                    {DAYS_OF_WEEK.map(day => (
+                      <TouchableOpacity 
+                        key={day.id} 
+                        style={[styles.dayBtn, scheduleDays.includes(day.id) && styles.dayBtnActive]} 
+                        onPress={() => toggleScheduleDay(day.id)}
+                      >
+                        <Text style={[styles.dayBtnText, scheduleDays.includes(day.id) && styles.dayBtnTextActive]}>{day.short}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </>
+              )}
+
+              <Text style={styles.scheduleLabel}>Time of Day</Text>
+              <View style={styles.timeRow}>
+                {['Morning', 'Afternoon', 'Evening', 'Bedtime'].map(time => (
+                  <TouchableOpacity 
+                    key={time} 
+                    style={[styles.timeBtn, scheduleTime === time && styles.timeBtnActive]} 
+                    onPress={() => setScheduleTime(time)}
+                  >
+                    <Text style={[styles.timeBtnText, scheduleTime === time && styles.timeBtnTextActive]}>{time}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              <View style={styles.modalBtns}>
+                <TouchableOpacity style={styles.cancelBtn} onPress={() => setShowScheduleModal(false)}>
+                  <Text style={styles.cancelBtnText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity testID="add-schedule-confirm" style={styles.applyBtn} onPress={addToSchedule}>
+                  <Text style={styles.applyBtnText}>Add</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </ScrollView>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -268,7 +440,7 @@ export default function CalculatorScreen() {
 const createStyles = (colors: any) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background },
   container: { flex: 1 },
-  content: { padding: spacing.lg, paddingBottom: 120 },
+  content: { padding: spacing.lg, paddingBottom: 180, ...(Platform.OS === 'web' ? { minHeight: '100%' } : {}) },
   title: { ...typography.h1, color: colors.textPrimary, marginBottom: spacing.md },
   presetsRow: { marginBottom: spacing.md, flexGrow: 0 },
   presetChip: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, marginRight: 8, gap: 6, borderWidth: 1, borderColor: colors.border },
@@ -286,8 +458,10 @@ const createStyles = (colors: any) => StyleSheet.create({
   resultLabel: { ...typography.caption, color: colors.textTertiary },
   resultValue: { ...typography.h1, color: colors.dosageHighlight, marginVertical: 4 },
   resultUnit: { ...typography.bodySm, color: colors.textSecondary },
-  savePresetBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: colors.primary, height: 56, borderRadius: 28, gap: 8, marginBottom: spacing.lg },
+  savePresetBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: colors.primary, height: 56, borderRadius: 28, gap: 8, marginBottom: spacing.md },
   savePresetText: { ...typography.bodyBase, color: colors.primaryForeground, fontWeight: '700' },
+  addToScheduleBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: colors.surface, height: 56, borderRadius: 28, gap: 8, marginBottom: spacing.lg, borderWidth: 2, borderColor: colors.accent },
+  addToScheduleText: { ...typography.bodyBase, color: colors.accent, fontWeight: '700' },
   disclaimer: { ...typography.bodySm, color: colors.textTertiary, fontSize: 11, lineHeight: 16, textAlign: 'center' },
   modalOverlay: { flex: 1, backgroundColor: colors.overlay, justifyContent: 'center', padding: spacing.lg },
   modal: { backgroundColor: colors.surface, borderRadius: 20, padding: spacing.lg },
@@ -298,4 +472,23 @@ const createStyles = (colors: any) => StyleSheet.create({
   cancelBtnText: { ...typography.bodyBase, color: colors.textSecondary },
   applyBtn: { flex: 1, height: 48, borderRadius: 24, backgroundColor: colors.primary, justifyContent: 'center', alignItems: 'center' },
   applyBtnText: { ...typography.bodyBase, color: colors.primaryForeground, fontWeight: '700' },
+  scheduleModalContent: { flexGrow: 1, justifyContent: 'center' },
+  scheduleLabel: { ...typography.caption, color: colors.textTertiary, marginBottom: spacing.sm, marginTop: spacing.sm },
+  dosePreview: { backgroundColor: colors.secondary, borderRadius: 12, padding: spacing.md, marginBottom: spacing.sm },
+  dosePreviewText: { ...typography.bodyBase, color: colors.dosageHighlight, textAlign: 'center', fontWeight: '600' },
+  frequencyRow: { flexDirection: 'row', gap: 8, marginBottom: spacing.sm },
+  frequencyBtn: { flex: 1, height: 48, borderRadius: 12, backgroundColor: colors.secondary, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: colors.border },
+  frequencyBtnActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+  frequencyBtnText: { ...typography.bodyBase, color: colors.textSecondary },
+  frequencyBtnTextActive: { color: colors.primaryForeground, fontWeight: '700' },
+  daysRow: { flexDirection: 'row', gap: 6, marginBottom: spacing.sm, flexWrap: 'wrap' },
+  dayBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.secondary, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: colors.border },
+  dayBtnActive: { backgroundColor: colors.accent, borderColor: colors.accent },
+  dayBtnText: { ...typography.bodySm, color: colors.textSecondary, fontWeight: '600' },
+  dayBtnTextActive: { color: colors.background, fontWeight: '700' },
+  timeRow: { flexDirection: 'row', gap: 8, marginBottom: spacing.md, flexWrap: 'wrap' },
+  timeBtn: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: 20, backgroundColor: colors.secondary, borderWidth: 1, borderColor: colors.border },
+  timeBtnActive: { backgroundColor: colors.accent, borderColor: colors.accent },
+  timeBtnText: { ...typography.bodySm, color: colors.textSecondary },
+  timeBtnTextActive: { color: colors.background, fontWeight: '700' },
 });

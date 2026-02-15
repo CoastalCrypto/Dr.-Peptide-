@@ -1,10 +1,11 @@
-import { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, TextInput, Modal, KeyboardAvoidingView, Platform } from 'react-native';
+import { useState, useCallback, useMemo } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, TextInput, Modal, KeyboardAvoidingView, Platform, Dimensions } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTheme } from '../../src/context/ThemeContext';
 import { typography, spacing } from '../../src/theme';
 import { Storage, KEYS } from '../../src/utils/storage';
 import { useFocusEffect } from 'expo-router';
+import { CartesianChart, Bar, Line } from 'victory-native';
 
 interface JournalEntry {
   id: string;
@@ -15,6 +16,11 @@ interface JournalEntry {
   sleep_quality?: number;
   sleep_hours?: number;
   mood?: string;
+  gym_activity?: {
+    type: string;
+    duration_mins: number;
+    intensity: number;
+  };
   notes?: string;
 }
 
@@ -26,6 +32,100 @@ const MOODS = [
   { emoji: '😞', label: 'Bad', value: 'bad' },
 ];
 
+const WORKOUT_TYPES = [
+  { icon: 'weight-lifter', label: 'Weights', value: 'weights' },
+  { icon: 'run', label: 'Cardio', value: 'cardio' },
+  { icon: 'yoga', label: 'Yoga', value: 'yoga' },
+  { icon: 'bike', label: 'Cycling', value: 'cycling' },
+  { icon: 'swim', label: 'Swimming', value: 'swimming' },
+  { icon: 'karate', label: 'Sports', value: 'sports' },
+  { icon: 'walk', label: 'Walking', value: 'walking' },
+  { icon: 'dumbbell', label: 'Other', value: 'other' },
+];
+
+const MOOD_VALUES: Record<string, number> = { great: 5, good: 4, okay: 3, low: 2, bad: 1 };
+
+// Simplified Victory Native Chart Component
+function VictoryTrendChart({ 
+  data, 
+  label, 
+  colors, 
+  chartColor,
+  chartType = 'bar',
+  unit = ''
+}: { 
+  data: { day: string; dayLabel: string; value: number }[];
+  label: string;
+  colors: any;
+  chartColor: string;
+  chartType?: 'bar' | 'line';
+  unit?: string;
+}) {
+  const chartWidth = Dimensions.get('window').width - spacing.lg * 2 - spacing.md * 2;
+  
+  if (!data.length || data.every(d => d.value === 0)) return null;
+  
+  const latestValue = data[data.length - 1]?.value || 0;
+  const maxValue = Math.max(...data.map(d => d.value), 1);
+
+  return (
+    <View style={{ backgroundColor: colors.surface, borderRadius: 16, padding: spacing.md, marginBottom: spacing.md, borderWidth: 1, borderColor: colors.border }}>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.sm }}>
+        <Text style={{ ...typography.caption, color: colors.textTertiary }}>{label}</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 4 }}>
+          <Text style={{ ...typography.bodyLg, color: chartColor, fontWeight: '700' }}>
+            {latestValue.toFixed(label.includes('Weight') ? 1 : 0)}
+          </Text>
+          {unit && <Text style={{ ...typography.bodySm, color: colors.textTertiary }}>{unit}</Text>}
+        </View>
+      </View>
+      <View style={{ height: 120 }}>
+        <CartesianChart
+          data={data}
+          xKey="day"
+          yKeys={["value"]}
+          domainPadding={{ left: 20, right: 20, top: 20, bottom: 10 }}
+          axisOptions={{
+            tickCount: { x: 7, y: 4 },
+            labelColor: colors.textTertiary,
+            lineColor: colors.border,
+            formatXLabel: (val: string) => data.find(d => d.day === val)?.dayLabel || '',
+            formatYLabel: (val: number) => String(Math.round(val)),
+          }}
+        >
+          {({ points, chartBounds }: any) => (
+            <>
+              {chartType === 'bar' ? (
+                <Bar
+                  points={points.value}
+                  chartBounds={chartBounds}
+                  color={chartColor}
+                  roundedCorners={{ topLeft: 4, topRight: 4 }}
+                  barWidth={Math.min(24, (chartWidth - 40) / data.length - 4)}
+                />
+              ) : (
+                <Line
+                  points={points.value}
+                  color={chartColor}
+                  strokeWidth={2.5}
+                  curveType="natural"
+                  connectMissingData={true}
+                />
+              )}
+            </>
+          )}
+        </CartesianChart>
+      </View>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-around', marginTop: 4 }}>
+        {data.map((d, i) => (
+          <Text key={i} style={{ ...typography.caption, color: colors.textTertiary, fontSize: 9 }}>{d.dayLabel}</Text>
+        ))}
+      </View>
+    </View>
+  );
+}
+
+// Fallback simple bar chart for web or when Skia fails
 function MiniBarChart({ data, max, label, colors }: { data: number[]; max: number; label: string; colors: any }) {
   return (
     <View style={{ backgroundColor: colors.surface, borderRadius: 16, padding: spacing.md, marginBottom: spacing.md, borderWidth: 1, borderColor: colors.border }}>
@@ -50,6 +150,9 @@ export default function JournalScreen() {
   const [sleepQuality, setSleepQuality] = useState(0);
   const [sleepHours, setSleepHours] = useState('');
   const [mood, setMood] = useState('');
+  const [gymType, setGymType] = useState('');
+  const [gymDuration, setGymDuration] = useState('');
+  const [gymIntensity, setGymIntensity] = useState(0);
   const [notes, setNotes] = useState('');
   const [tab, setTab] = useState<'log' | 'trends'>('log');
 
@@ -70,20 +173,64 @@ export default function JournalScreen() {
       sleep_quality: sleepQuality || undefined,
       sleep_hours: sleepHours ? parseFloat(sleepHours) : undefined,
       mood: mood || undefined,
+      gym_activity: gymType && gymDuration ? {
+        type: gymType,
+        duration_mins: parseInt(gymDuration),
+        intensity: gymIntensity || 5,
+      } : undefined,
       notes: notes || undefined,
     };
     const existing = entries.filter(e => e.date !== today);
     const updated = [entry, ...existing];
     await Storage.set(KEYS.JOURNAL_ENTRIES, updated);
     setEntries(updated);
+    
+    // Track workout history for streak badge
+    if (gymType && gymDuration && parseInt(gymDuration) > 0) {
+      const history = await Storage.get<string[]>(KEYS.WORKOUT_HISTORY) || [];
+      if (!history.includes(today)) {
+        const updatedHistory = [today, ...history].slice(0, 90); // Keep last 90 days
+        await Storage.set(KEYS.WORKOUT_HISTORY, updatedHistory);
+      }
+    }
+    
     setShowLog(false);
     resetForm();
   };
 
-  const resetForm = () => { setWeight(''); setEnergy(0); setSleepQuality(0); setSleepHours(''); setMood(''); setNotes(''); };
+  const resetForm = () => { setWeight(''); setEnergy(0); setSleepQuality(0); setSleepHours(''); setMood(''); setGymType(''); setGymDuration(''); setGymIntensity(0); setNotes(''); };
 
-  const weightData = entries.slice(0, 7).reverse().map(e => e.weight || 0);
-  const energyData = entries.slice(0, 7).reverse().map(e => e.energy_level || 0);
+  // Prepare chart data for Victory Native
+  const chartEntries = useMemo(() => {
+    return entries.slice(0, 7).reverse().map((e, i) => {
+      const date = new Date(e.date + 'T12:00:00');
+      return {
+        day: String(i),
+        dayLabel: date.toLocaleDateString('en-US', { weekday: 'short' }).substring(0, 2),
+        weight: e.weight || 0,
+        energy: e.energy_level || 0,
+        sleep: e.sleep_quality || 0,
+        sleepHours: e.sleep_hours || 0,
+        mood: MOOD_VALUES[e.mood || ''] || 0,
+        gym: e.gym_activity?.duration_mins || 0,
+      };
+    });
+  }, [entries]);
+
+  const hasWeightData = chartEntries.some(d => d.weight > 0);
+  const hasEnergyData = chartEntries.some(d => d.energy > 0);
+  const hasSleepData = chartEntries.some(d => d.sleep > 0);
+  const hasSleepHoursData = chartEntries.some(d => d.sleepHours > 0);
+  const hasMoodData = chartEntries.some(d => d.mood > 0);
+  const hasGymData = chartEntries.some(d => d.gym > 0);
+  const hasAnyData = hasWeightData || hasEnergyData || hasSleepData || hasMoodData || hasGymData;
+
+  // Use fallback on web
+  const useVictoryCharts = Platform.OS !== 'web';
+  
+  const weightDataSimple = entries.slice(0, 7).reverse().map(e => e.weight || 0);
+  const energyDataSimple = entries.slice(0, 7).reverse().map(e => e.energy_level || 0);
+  const gymDataSimple = entries.slice(0, 7).reverse().map(e => e.gym_activity?.duration_mins || 0);
 
   const lastWeight = entries.find(e => e.weight)?.weight;
   const prevWeight = entries.filter(e => e.weight)[1]?.weight;
@@ -107,7 +254,7 @@ export default function JournalScreen() {
 
         {tab === 'log' ? (
           <>
-            <TouchableOpacity testID="log-today-btn" style={styles.logBtn} onPress={() => { if (todayEntry) { setWeight(todayEntry.weight?.toString() || ''); setEnergy(todayEntry.energy_level || 0); setSleepQuality(todayEntry.sleep_quality || 0); setSleepHours(todayEntry.sleep_hours?.toString() || ''); setMood(todayEntry.mood || ''); setNotes(todayEntry.notes || ''); } setShowLog(true); }}>
+            <TouchableOpacity testID="log-today-btn" style={styles.logBtn} onPress={() => { if (todayEntry) { setWeight(todayEntry.weight?.toString() || ''); setEnergy(todayEntry.energy_level || 0); setSleepQuality(todayEntry.sleep_quality || 0); setSleepHours(todayEntry.sleep_hours?.toString() || ''); setMood(todayEntry.mood || ''); setGymType(todayEntry.gym_activity?.type || ''); setGymDuration(todayEntry.gym_activity?.duration_mins?.toString() || ''); setGymIntensity(todayEntry.gym_activity?.intensity || 0); setNotes(todayEntry.notes || ''); } setShowLog(true); }}>
               <MaterialCommunityIcons name="plus-circle" size={24} color={colors.primaryForeground} />
               <Text style={styles.logBtnText}>{todayEntry ? 'Update Today\'s Entry' : 'Log Today'}</Text>
             </TouchableOpacity>
@@ -146,6 +293,7 @@ export default function JournalScreen() {
                     {entry.sleep_quality && <Text style={styles.entryMetric}>😴 Sleep: {entry.sleep_quality}/10</Text>}
                     {entry.sleep_hours && <Text style={styles.entryMetric}>🕐 {entry.sleep_hours}h sleep</Text>}
                     {entry.mood && <Text style={styles.entryMetric}>{MOODS.find(m => m.value === entry.mood)?.emoji} {entry.mood}</Text>}
+                    {entry.gym_activity && <Text style={styles.entryMetric}>💪 {WORKOUT_TYPES.find(w => w.value === entry.gym_activity?.type)?.label || entry.gym_activity.type}: {entry.gym_activity.duration_mins}min</Text>}
                   </View>
                   {entry.notes && <Text style={styles.entryNotes}>{entry.notes}</Text>}
                 </View>
@@ -155,9 +303,81 @@ export default function JournalScreen() {
         ) : (
           <>
             <Text style={styles.sectionTitle}>7-Day Trends</Text>
-            {weightData.some(v => v > 0) && <MiniBarChart data={weightData} max={Math.max(...weightData) * 1.1} label="Weight (lbs)" colors={colors} />}
-            {energyData.some(v => v > 0) && <MiniBarChart data={energyData} max={10} label="Energy Level" colors={colors} />}
-            {!weightData.some(v => v > 0) && !energyData.some(v => v > 0) && (
+            
+            {useVictoryCharts ? (
+              // Victory Native Charts (native platforms)
+              <>
+                {hasWeightData && (
+                  <VictoryTrendChart
+                    data={chartEntries.map(e => ({ day: e.day, dayLabel: e.dayLabel, value: e.weight }))}
+                    label="Weight"
+                    colors={colors}
+                    chartColor="#FF6B6B"
+                    chartType="line"
+                    unit="lbs"
+                  />
+                )}
+                {hasEnergyData && (
+                  <VictoryTrendChart
+                    data={chartEntries.map(e => ({ day: e.day, dayLabel: e.dayLabel, value: e.energy }))}
+                    label="Energy Level"
+                    colors={colors}
+                    chartColor="#FFD166"
+                    chartType="bar"
+                    unit="/10"
+                  />
+                )}
+                {hasSleepData && (
+                  <VictoryTrendChart
+                    data={chartEntries.map(e => ({ day: e.day, dayLabel: e.dayLabel, value: e.sleep }))}
+                    label="Sleep Quality"
+                    colors={colors}
+                    chartColor="#6C63FF"
+                    chartType="bar"
+                    unit="/10"
+                  />
+                )}
+                {hasSleepHoursData && (
+                  <VictoryTrendChart
+                    data={chartEntries.map(e => ({ day: e.day, dayLabel: e.dayLabel, value: e.sleepHours }))}
+                    label="Sleep Duration"
+                    colors={colors}
+                    chartColor="#4ECDC4"
+                    chartType="line"
+                    unit="hrs"
+                  />
+                )}
+                {hasMoodData && (
+                  <VictoryTrendChart
+                    data={chartEntries.map(e => ({ day: e.day, dayLabel: e.dayLabel, value: e.mood }))}
+                    label="Mood"
+                    colors={colors}
+                    chartColor="#06D6A0"
+                    chartType="bar"
+                    unit="/5"
+                  />
+                )}
+                {hasGymData && (
+                  <VictoryTrendChart
+                    data={chartEntries.map(e => ({ day: e.day, dayLabel: e.dayLabel, value: e.gym }))}
+                    label="Gym Activity"
+                    colors={colors}
+                    chartColor={colors.accent}
+                    chartType="bar"
+                    unit="mins"
+                  />
+                )}
+              </>
+            ) : (
+              // Fallback simple bar charts (web)
+              <>
+                {weightDataSimple.some(v => v > 0) && <MiniBarChart data={weightDataSimple} max={Math.max(...weightDataSimple) * 1.1} label="Weight (lbs)" colors={colors} />}
+                {energyDataSimple.some(v => v > 0) && <MiniBarChart data={energyDataSimple} max={10} label="Energy Level" colors={colors} />}
+                {gymDataSimple.some(v => v > 0) && <MiniBarChart data={gymDataSimple} max={Math.max(...gymDataSimple, 60)} label="Gym Activity (mins)" colors={colors} />}
+              </>
+            )}
+            
+            {!hasAnyData && (
               <View style={styles.emptyCard}>
                 <MaterialCommunityIcons name="chart-line" size={48} color={colors.textTertiary} />
                 <Text style={styles.emptyText}>Not enough data for trends</Text>
@@ -207,6 +427,56 @@ export default function JournalScreen() {
                   </TouchableOpacity>
                 ))}
               </View>
+
+              <Text style={styles.fieldLabel}>Gym Activity</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.workoutScroll}>
+                <View style={styles.workoutRow}>
+                  {WORKOUT_TYPES.map(w => (
+                    <TouchableOpacity 
+                      key={w.value} 
+                      testID={`workout-${w.value}`}
+                      style={[styles.workoutBtn, gymType === w.value && styles.workoutBtnActive]} 
+                      onPress={() => setGymType(gymType === w.value ? '' : w.value)}
+                    >
+                      <MaterialCommunityIcons name={w.icon as any} size={24} color={gymType === w.value ? colors.primaryForeground : colors.textSecondary} />
+                      <Text style={[styles.workoutLabel, gymType === w.value && styles.workoutLabelActive]}>{w.label}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </ScrollView>
+              
+              {gymType !== '' && (
+                <>
+                  <View style={styles.gymInputRow}>
+                    <View style={styles.gymInputGroup}>
+                      <Text style={styles.gymInputLabel}>Duration (mins)</Text>
+                      <TextInput 
+                        testID="journal-gym-duration"
+                        style={styles.gymInput} 
+                        placeholder="45" 
+                        placeholderTextColor={colors.textTertiary} 
+                        value={gymDuration} 
+                        onChangeText={setGymDuration} 
+                        keyboardType="numeric" 
+                      />
+                    </View>
+                    <View style={styles.gymInputGroup}>
+                      <Text style={styles.gymInputLabel}>Intensity (1-10)</Text>
+                      <View style={styles.intensityRow}>
+                        {[1,2,3,4,5,6,7,8,9,10].map(n => (
+                          <TouchableOpacity 
+                            key={n} 
+                            style={[styles.intensityBtn, gymIntensity === n && styles.intensityBtnActive]} 
+                            onPress={() => setGymIntensity(n)}
+                          >
+                            <Text style={[styles.intensityText, gymIntensity === n && styles.intensityTextActive]}>{n}</Text>
+                          </TouchableOpacity>
+                        ))}
+                      </View>
+                    </View>
+                  </View>
+                </>
+              )}
 
               <Text style={styles.fieldLabel}>Notes</Text>
               <TextInput testID="journal-notes" style={[styles.input, styles.notesInput]} placeholder="How are you feeling today?" placeholderTextColor={colors.textTertiary} value={notes} onChangeText={setNotes} multiline />
@@ -273,6 +543,21 @@ const createStyles = (colors: any) => StyleSheet.create({
   moodEmoji: { fontSize: 24 },
   moodLabel: { ...typography.caption, color: colors.textTertiary, fontSize: 9, marginTop: 2 },
   moodLabelActive: { color: colors.primaryForeground },
+  workoutScroll: { marginBottom: spacing.sm },
+  workoutRow: { flexDirection: 'row', gap: 10 },
+  workoutBtn: { width: 72, alignItems: 'center', paddingVertical: 12, borderRadius: 12, backgroundColor: colors.secondary, borderWidth: 1, borderColor: colors.border },
+  workoutBtnActive: { backgroundColor: colors.accent, borderColor: colors.accent },
+  workoutLabel: { ...typography.caption, color: colors.textTertiary, fontSize: 10, marginTop: 6 },
+  workoutLabelActive: { color: colors.primaryForeground },
+  gymInputRow: { marginTop: spacing.sm },
+  gymInputGroup: { marginBottom: spacing.sm },
+  gymInputLabel: { ...typography.caption, color: colors.textTertiary, marginBottom: 6 },
+  gymInput: { height: 48, backgroundColor: colors.secondary, borderRadius: 12, borderWidth: 1, borderColor: colors.border, paddingHorizontal: spacing.md, color: colors.textPrimary, fontSize: 16 },
+  intensityRow: { flexDirection: 'row', gap: 4 },
+  intensityBtn: { width: 28, height: 36, borderRadius: 8, backgroundColor: colors.secondary, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: colors.border },
+  intensityBtnActive: { backgroundColor: colors.accent, borderColor: colors.accent },
+  intensityText: { ...typography.bodySm, color: colors.textSecondary, fontSize: 12 },
+  intensityTextActive: { color: colors.primaryForeground, fontWeight: '700' },
   modalBtns: { flexDirection: 'row', gap: 12, marginTop: spacing.xl },
   cancelBtn: { flex: 1, height: 52, borderRadius: 26, borderWidth: 1, borderColor: colors.border, justifyContent: 'center', alignItems: 'center' },
   cancelBtnText: { ...typography.bodyBase, color: colors.textSecondary },

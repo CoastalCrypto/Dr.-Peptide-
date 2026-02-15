@@ -9,6 +9,7 @@ import { recurringItemsApi } from '../../src/utils/api';
 import { useFocusEffect } from 'expo-router';
 import { ScheduleCalendar } from '../../src/components/ScheduleCalendar';
 import { AddRecurringItemModal } from '../../src/components/AddRecurringItemModal';
+import { InjectionSiteTracker } from '../../src/components/InjectionSiteTracker';
 import { RecurringItem, RecurringDoseLog, DoseStatus, CATEGORY_COLORS, ItemCategory } from '../../src/types/recurring';
 
 const TIME_SLOTS = ['Morning', 'Afternoon', 'Evening', 'Bedtime'];
@@ -41,6 +42,93 @@ function AdherenceRing({ taken, total, colors }: { taken: number; total: number;
   );
 }
 
+function WorkoutStreakBadge() {
+  const { colors } = useTheme();
+  const [streak, setStreak] = useState<{ count: number; message: string; showBadge: boolean }>({ count: 0, message: '', showBadge: false });
+
+  useEffect(() => {
+    loadStreak();
+  }, []);
+
+  const loadStreak = async () => {
+    try {
+      // Get workout history from storage
+      const history = await Storage.get<string[]>(KEYS.WORKOUT_HISTORY) || [];
+      
+      // Calculate consecutive days streak
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      let count = 0;
+      for (let i = 0; i < 30; i++) {
+        const checkDate = new Date(today);
+        checkDate.setDate(checkDate.getDate() - i);
+        const dateStr = checkDate.toISOString().split('T')[0];
+        
+        if (history.includes(dateStr)) {
+          count++;
+        } else if (i > 0) {
+          // Allow today to be missing (haven't worked out yet today)
+          break;
+        }
+      }
+      
+      // Generate motivational message
+      let message = '';
+      if (count >= 7) message = 'Legendary! You\'re unstoppable!';
+      else if (count >= 5) message = 'Amazing dedication!';
+      else if (count >= 3) message = 'Keep it going!';
+      else if (count >= 1) message = 'Good start!';
+      
+      setStreak({ count, message, showBadge: count >= 2 });
+    } catch (err) {
+      console.error('Error loading streak:', err);
+    }
+  };
+
+  if (!streak.showBadge) return null;
+
+  const getStreakEmoji = () => {
+    if (streak.count >= 7) return '💪🔥';
+    if (streak.count >= 5) return '🔥🔥';
+    if (streak.count >= 3) return '🔥';
+    return '✨';
+  };
+
+  return (
+    <View style={{
+      backgroundColor: colors.surface,
+      borderRadius: 16,
+      padding: spacing.md,
+      marginBottom: spacing.md,
+      borderWidth: 2,
+      borderColor: streak.count >= 7 ? '#FFD700' : streak.count >= 5 ? '#FF6B35' : colors.accent,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.md,
+    }} testID="workout-streak-badge">
+      <View style={{
+        width: 56,
+        height: 56,
+        borderRadius: 28,
+        backgroundColor: streak.count >= 7 ? '#FFD700' : streak.count >= 5 ? '#FF6B35' : colors.accent,
+        justifyContent: 'center',
+        alignItems: 'center',
+      }}>
+        <Text style={{ fontSize: 24 }}>{getStreakEmoji()}</Text>
+      </View>
+      <View style={{ flex: 1 }}>
+        <Text style={{ ...typography.h3, color: colors.textPrimary }}>
+          {streak.count}-Day Streak!
+        </Text>
+        <Text style={{ ...typography.bodySm, color: colors.textTertiary }}>
+          {streak.message}
+        </Text>
+      </View>
+    </View>
+  );
+}
+
 export default function HomeScreen() {
   const { colors } = useTheme();
   const today = new Date().toISOString().split('T')[0];
@@ -50,6 +138,7 @@ export default function HomeScreen() {
   const [doseLogs, setDoseLogs] = useState<RecurringDoseLog[]>([]);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showLogModal, setShowLogModal] = useState(false);
+  const [showInjectionTracker, setShowInjectionTracker] = useState(false);
   const [selectedDose, setSelectedDose] = useState<ScheduledDose | null>(null);
   const [loading, setLoading] = useState(true);
   const [markedDates, setMarkedDates] = useState<Record<string, { marked: boolean; dotColor: string; count: number }>>({});
@@ -236,6 +325,9 @@ export default function HomeScreen() {
           <AdherenceRing taken={takenCount} total={scheduledDoses.length} colors={colors} />
         </View>
 
+        {/* Workout Streak Badge */}
+        <WorkoutStreakBadge />
+
         {/* Calendar Section */}
         <ScheduleCalendar
           selectedDate={selectedDate}
@@ -352,6 +444,17 @@ export default function HomeScreen() {
             </ScrollView>
           </>
         )}
+        
+        {/* Injection Site Tracker Button */}
+        <TouchableOpacity 
+          testID="injection-tracker-btn"
+          style={styles.injectionBtn} 
+          onPress={() => setShowInjectionTracker(true)}
+        >
+          <MaterialCommunityIcons name="needle" size={22} color={colors.accent} />
+          <Text style={styles.injectionBtnText}>Injection Site Tracker</Text>
+          <MaterialCommunityIcons name="chevron-right" size={22} color={colors.textTertiary} />
+        </TouchableOpacity>
       </ScrollView>
 
       {/* FAB */}
@@ -414,6 +517,12 @@ export default function HomeScreen() {
           </View>
         </TouchableOpacity>
       </Modal>
+
+      {/* Injection Site Tracker Modal */}
+      <InjectionSiteTracker 
+        visible={showInjectionTracker} 
+        onClose={() => setShowInjectionTracker(false)} 
+      />
     </SafeAreaView>
   );
 }
@@ -456,6 +565,8 @@ const createStyles = (colors: any) => StyleSheet.create({
   itemName: { ...typography.bodySm, color: colors.textPrimary, fontWeight: '600' },
   itemDose: { ...typography.caption, color: colors.textSecondary, marginTop: 4 },
   itemFreq: { ...typography.caption, color: colors.textTertiary, marginTop: 2, textTransform: 'capitalize' },
+  injectionBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, borderRadius: 12, padding: spacing.md, marginTop: spacing.lg, borderWidth: 1, borderColor: colors.border, gap: 12 },
+  injectionBtnText: { ...typography.bodyBase, color: colors.textPrimary, flex: 1 },
   fab: { position: 'absolute', bottom: 100, right: 24, width: 60, height: 60, borderRadius: 30, backgroundColor: colors.primary, justifyContent: 'center', alignItems: 'center', elevation: 8, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 4.65 },
   modalOverlay: { flex: 1, backgroundColor: colors.overlay, justifyContent: 'center', alignItems: 'center' },
   logModal: { backgroundColor: colors.surface, borderRadius: 20, padding: spacing.lg, width: '85%', maxWidth: 320 },
