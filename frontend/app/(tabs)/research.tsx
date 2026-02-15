@@ -29,6 +29,11 @@ export default function ResearchScreen() {
   const [webSearchQuery, setWebSearchQuery] = useState('');
   const [webSearchResult, setWebSearchResult] = useState<string | null>(null);
   const [webSearchLoading, setWebSearchLoading] = useState(false);
+  
+  // Comparison state
+  const [compareMode, setCompareMode] = useState(false);
+  const [selectedForCompare, setSelectedForCompare] = useState<string[]>([]);
+  const [showCompareModal, setShowCompareModal] = useState(false);
 
   // Custom peptide form
   const [cpName, setCpName] = useState('');
