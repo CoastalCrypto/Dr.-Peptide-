@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Modal, Pressable } from 'react-native';
-import { useRouter, usePathname } from 'expo-router';
+import { useRouter, usePathname, useSegments } from 'expo-router';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing } from '../theme';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
