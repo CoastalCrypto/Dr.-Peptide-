@@ -162,6 +162,8 @@ All-in-one health companion app for researching, calculating dosages, tracking u
 ---
 
 ## Upcoming Tasks
+- [ ] App Store screenshots (generate and save to /app/assets/screenshots/)
+- [ ] Theme persistence fix for web preview (storage.ts update)
 - [ ] Calculator: "Save as Preset" and "Add to Schedule" buttons
 - [ ] Journal: Full logging UI with charts (Victory Native)
 - [ ] Research: Full-text search, "Browse by Goal" filtering, Comparison Tool
@@ -176,3 +178,16 @@ All-in-one health companion app for researching, calculating dosages, tracking u
 - [ ] Data export (CSV/PDF)
 - [ ] Biometric/PIN app lock
 - [ ] OpenFDA API integration
+
+---
+
+## Deployment Status (Feb 15, 2026)
+- **Pre-publish validation**: All checks pass ✅
+- **Backend**: Healthy, MongoDB connected
+- **Frontend**: All screens functional
+- **Remaining for App Store submission**:
+  1. Create Expo account and run `eas init` to set projectId
+  2. Deploy backend to Railway/Render
+  3. Update `EXPO_PUBLIC_BACKEND_URL` in eas.json
+  4. Generate app screenshots
+  5. Run `eas build --platform android --profile production`
