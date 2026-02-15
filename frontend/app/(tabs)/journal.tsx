@@ -89,6 +89,11 @@ export default function JournalScreen() {
       sleep_quality: sleepQuality || undefined,
       sleep_hours: sleepHours ? parseFloat(sleepHours) : undefined,
       mood: mood || undefined,
+      gym_activity: gymType && gymDuration ? {
+        type: gymType,
+        duration_mins: parseInt(gymDuration),
+        intensity: gymIntensity || 5,
+      } : undefined,
       notes: notes || undefined,
     };
     const existing = entries.filter(e => e.date !== today);
