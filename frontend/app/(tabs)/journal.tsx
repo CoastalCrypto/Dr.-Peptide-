@@ -1,10 +1,12 @@
-import { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, TextInput, Modal, KeyboardAvoidingView, Platform } from 'react-native';
+import { useState, useCallback, useMemo } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, TextInput, Modal, KeyboardAvoidingView, Platform, Dimensions } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTheme } from '../../src/context/ThemeContext';
 import { typography, spacing } from '../../src/theme';
 import { Storage, KEYS } from '../../src/utils/storage';
 import { useFocusEffect } from 'expo-router';
+import { CartesianChart, Bar, Line, useChartPressState } from 'victory-native';
+import { Circle, useFont, Text as SkiaText, vec } from '@shopify/react-native-skia';
 
 interface JournalEntry {
   id: string;
@@ -42,6 +44,100 @@ const WORKOUT_TYPES = [
   { icon: 'dumbbell', label: 'Other', value: 'other' },
 ];
 
+const MOOD_VALUES: Record<string, number> = { great: 5, good: 4, okay: 3, low: 2, bad: 1 };
+
+// Victory Native Chart Component with touch interaction
+function VictoryTrendChart({ 
+  data, 
+  label, 
+  yKey, 
+  colors, 
+  chartColor,
+  chartType = 'bar',
+  unit = ''
+}: { 
+  data: { day: string; dayLabel: string; value: number }[];
+  label: string;
+  yKey: string;
+  colors: any;
+  chartColor: string;
+  chartType?: 'bar' | 'line';
+  unit?: string;
+}) {
+  const { state, isActive } = useChartPressState({ x: '', y: { [yKey]: 0 } });
+  const chartWidth = Dimensions.get('window').width - spacing.lg * 2 - spacing.md * 2;
+  
+  if (!data.length || data.every(d => d.value === 0)) return null;
+
+  return (
+    <View style={{ backgroundColor: colors.surface, borderRadius: 16, padding: spacing.md, marginBottom: spacing.md, borderWidth: 1, borderColor: colors.border }}>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.sm }}>
+        <Text style={{ ...typography.caption, color: colors.textTertiary }}>{label}</Text>
+        {isActive && (
+          <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 4 }}>
+            <Text style={{ ...typography.bodyLg, color: chartColor, fontWeight: '700' }}>
+              {state.y[yKey].value.toFixed(yKey === 'weight' ? 1 : 0)}
+            </Text>
+            {unit && <Text style={{ ...typography.bodySm, color: colors.textTertiary }}>{unit}</Text>}
+          </View>
+        )}
+      </View>
+      <View style={{ height: 120 }}>
+        <CartesianChart
+          data={data}
+          xKey="day"
+          yKeys={[yKey]}
+          domainPadding={{ left: 20, right: 20, top: 20, bottom: 10 }}
+          chartPressState={state}
+          axisOptions={{
+            tickCount: { x: 7, y: 4 },
+            labelColor: colors.textTertiary,
+            lineColor: colors.border,
+            formatXLabel: (val) => data.find(d => d.day === val)?.dayLabel || '',
+            formatYLabel: (val) => val.toFixed(0),
+          }}
+        >
+          {({ points, chartBounds }) => (
+            <>
+              {chartType === 'bar' ? (
+                <Bar
+                  points={points[yKey]}
+                  chartBounds={chartBounds}
+                  color={chartColor}
+                  roundedCorners={{ topLeft: 4, topRight: 4 }}
+                  barWidth={Math.min(24, (chartWidth - 40) / data.length - 4)}
+                />
+              ) : (
+                <Line
+                  points={points[yKey]}
+                  color={chartColor}
+                  strokeWidth={2.5}
+                  curveType="natural"
+                  connectMissingData={true}
+                />
+              )}
+              {isActive && (
+                <Circle
+                  cx={state.x.position}
+                  cy={state.y[yKey].position}
+                  r={6}
+                  color={chartColor}
+                />
+              )}
+            </>
+          )}
+        </CartesianChart>
+      </View>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-around', marginTop: 4 }}>
+        {data.map((d, i) => (
+          <Text key={i} style={{ ...typography.caption, color: colors.textTertiary, fontSize: 9 }}>{d.dayLabel}</Text>
+        ))}
+      </View>
+    </View>
+  );
+}
+
+// Fallback simple bar chart for web or when Skia fails
 function MiniBarChart({ data, max, label, colors }: { data: number[]; max: number; label: string; colors: any }) {
   return (
     <View style={{ backgroundColor: colors.surface, borderRadius: 16, padding: spacing.md, marginBottom: spacing.md, borderWidth: 1, borderColor: colors.border }}>
