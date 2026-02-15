@@ -5,8 +5,7 @@ import { useTheme } from '../../src/context/ThemeContext';
 import { typography, spacing } from '../../src/theme';
 import { Storage, KEYS } from '../../src/utils/storage';
 import { useFocusEffect } from 'expo-router';
-import { CartesianChart, Bar, Line, useChartPressState } from 'victory-native';
-import { Circle, useFont, Text as SkiaText, vec } from '@shopify/react-native-skia';
+import { CartesianChart, Bar, Line } from 'victory-native';
 
 interface JournalEntry {
   id: string;
