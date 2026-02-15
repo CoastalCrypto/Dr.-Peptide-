@@ -184,6 +184,16 @@ export default function JournalScreen() {
     const updated = [entry, ...existing];
     await Storage.set(KEYS.JOURNAL_ENTRIES, updated);
     setEntries(updated);
+    
+    // Track workout history for streak badge
+    if (gymType && gymDuration && parseInt(gymDuration) > 0) {
+      const history = await Storage.get<string[]>(KEYS.WORKOUT_HISTORY) || [];
+      if (!history.includes(today)) {
+        const updatedHistory = [today, ...history].slice(0, 90); // Keep last 90 days
+        await Storage.set(KEYS.WORKOUT_HISTORY, updatedHistory);
+      }
+    }
+    
     setShowLog(false);
     resetForm();
   };
