@@ -301,6 +301,11 @@ export default function CalculatorScreen() {
           <Text style={styles.savePresetText}>Save as Preset</Text>
         </TouchableOpacity>
 
+        <TouchableOpacity testID="add-to-schedule-btn" style={styles.addToScheduleBtn} onPress={() => setShowScheduleModal(true)}>
+          <MaterialCommunityIcons name="calendar-plus" size={20} color={colors.accent} />
+          <Text style={styles.addToScheduleText}>Add to Schedule</Text>
+        </TouchableOpacity>
+
         <Text style={styles.disclaimer}>{DISCLAIMER}</Text>
       </ScrollView>
 
