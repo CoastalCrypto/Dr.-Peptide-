@@ -219,6 +219,16 @@ All-in-one health companion app for researching, calculating dosages, tracking u
 - [x] **PIN/Biometric Security** - VERIFIED WORKING
 - [x] **Peptide Comparison Tool** - VERIFIED WORKING (bug fixed)
 - [x] **Victory Native Charts** - Implemented for Journal Trends
+- [x] **Navigation Redesign** - Hamburger dropdown menu replacing bottom tabs
+- [x] **Vendor Management in Navigation** - Added to dropdown menu (Feb 15, 2026)
+- [x] **Workout Streak Badge** - Shows consecutive workout days on Home screen
+- [x] **Navigation Header Title** - FIXED - Updates correctly when switching screens
+- [x] **TypeScript Errors** - FIXED - All TSC errors resolved
+
+---
+
+## Known Limitations
+- **Theme persistence on web preview**: Works within session but Playwright testing tool clears localStorage between contexts. Works correctly in actual browser usage.
 
 ---
 
