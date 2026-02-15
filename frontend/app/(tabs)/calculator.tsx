@@ -200,7 +200,12 @@ export default function CalculatorScreen() {
         {presets.length > 0 && (
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.presetsRow}>
             {presets.map(p => (
-              <TouchableOpacity key={p.id} style={styles.presetChip} onPress={() => loadPreset(p)}>
+              <TouchableOpacity 
+                key={p.id} 
+                style={styles.presetChip} 
+                onPress={() => loadPreset(p)}
+                onLongPress={() => deletePreset(p.id)}
+              >
                 <MaterialCommunityIcons name="lightning-bolt" size={14} color={colors.accent} />
                 <Text style={styles.presetChipText}>{p.name}</Text>
               </TouchableOpacity>
