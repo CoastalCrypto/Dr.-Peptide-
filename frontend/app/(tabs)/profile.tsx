@@ -4,6 +4,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Constants from 'expo-constants';
 import { useTheme } from '../../src/context/ThemeContext';
 import { useAuth } from '../../src/context/AuthContext';
+import { useAppLock } from '../../src/context/AppLockContext';
 import { typography, spacing, DISCLAIMER } from '../../src/theme';
 import { Storage, KEYS } from '../../src/utils/storage';
 import { api } from '../../src/utils/api';
@@ -29,6 +30,7 @@ interface ProfileScreenProps {
 export default function ProfileScreen({ embedded = false }: ProfileScreenProps) {
   const { colors, mode, setMode, isDark } = useTheme();
   const { user, isAuthenticated, login, logout, isLoading: authLoading } = useAuth();
+  const { checkLockStatus } = useAppLock();
   const router = useRouter();
   const [settings, setSettings] = useState<Settings>({ weightUnit: 'lbs', measureUnit: 'inches', notifications: true });
   
@@ -232,6 +234,7 @@ export default function ProfileScreen({ embedded = false }: ProfileScreenProps) 
       setShowPINModal(false);
       setPinInput('');
       setPinConfirm('');
+      await checkLockStatus(); // Update app lock context
       Alert.alert('Success', 'PIN has been set successfully.');
     }
   };
@@ -243,6 +246,7 @@ export default function ProfileScreen({ embedded = false }: ProfileScreenProps) 
         await AppLockService.removePIN();
         await AppLockService.setLockEnabled(false);
         setHasPIN(false);
+        await checkLockStatus(); // Update app lock context
       }},
     ]);
   };

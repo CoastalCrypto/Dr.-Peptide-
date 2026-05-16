@@ -10,6 +10,7 @@ export interface Medication {
   interactions: string[];
   timing: string;
   isCustom?: boolean;
+  source?: string;
 }
 
 export const medications: Medication[] = [

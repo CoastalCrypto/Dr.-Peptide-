@@ -66,25 +66,9 @@ export function SwipeableNavigation({ pages, initialPage = 0 }: SwipeableNavigat
 
   const renderPage = useCallback(({ item, index }: { item: PageInfo; index: number }) => (
     <View key={item.key} style={[styles.page, { width: SCREEN_WIDTH }]}>
-      <ScrollView
-        style={{ flex: 1 }}
-        contentContainerStyle={{ flexGrow: 1 }}
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          item.onRefresh ? (
-            <RefreshControl
-              refreshing={refreshing && currentPage === index}
-              onRefresh={handleRefresh}
-              tintColor={colors.accent}
-              colors={[colors.accent]}
-            />
-          ) : undefined
-        }
-      >
-        {item.component}
-      </ScrollView>
+      {item.component}
     </View>
-  ), [refreshing, currentPage, colors.accent, styles.page]);
+  ), [styles.page]);
 
   return (
     <View style={styles.container}>

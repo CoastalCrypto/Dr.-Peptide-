@@ -29,25 +29,22 @@ async def search_medications(
         return {"results": [], "meta": {"total": 0}}
     
     # Build search query - search across multiple fields
+    # Use URL-safe format for OR operator (space instead of +OR+)
     search_query = (
-        f'(openfda.generic_name:"{query}")'
-        f'+OR+(openfda.brand_name:"{query}")'
-        f'+OR+(openfda.substance_name:"{query}")'
-        f'+OR+(openfda.pharm_class_epc:"{query}")'
+        f'openfda.generic_name:"{query}" '
+        f'openfda.brand_name:"{query}" '
+        f'openfda.substance_name:"{query}" '
+        f'openfda.pharm_class_epc:"{query}"'
     )
     
-    params = {
-        "search": search_query,
-        "limit": min(limit, 100),
-        "skip": skip,
-    }
-    
+    # Build URL manually to avoid double-encoding issues with httpx
+    url = f"{OPENFDA_BASE_URL}?search={search_query}&limit={min(limit, 100)}&skip={skip}"
     if OPENFDA_API_KEY:
-        params["api_key"] = OPENFDA_API_KEY
+        url += f"&api_key={OPENFDA_API_KEY}"
     
     try:
         async with httpx.AsyncClient(timeout=30.0) as client:
-            response = await client.get(OPENFDA_BASE_URL, params=params)
+            response = await client.get(url)
             
             if response.status_code == 404:
                 # No results found

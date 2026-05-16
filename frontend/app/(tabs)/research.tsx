@@ -49,6 +49,12 @@ export default function ResearchScreen({ embedded = false }: ResearchScreenProps
   const [webSearchResult, setWebSearchResult] = useState<string | null>(null);
   const [webSearchLoading, setWebSearchLoading] = useState(false);
   
+  // FDA Search state
+  const [fdaSearchQuery, setFdaSearchQuery] = useState('');
+  const [fdaResults, setFdaResults] = useState<any[]>([]);
+  const [fdaLoading, setFdaLoading] = useState(false);
+  const [showFdaResults, setShowFdaResults] = useState(false);
+  
   // Comparison state
   const [compareMode, setCompareMode] = useState(false);
   const [selectedForCompare, setSelectedForCompare] = useState<string[]>([]);
@@ -148,6 +154,59 @@ export default function ResearchScreen({ embedded = false }: ResearchScreenProps
     setWebSearchQuery(search);
     setWebSearchResult(null);
     setShowWebSearch(true);
+  };
+
+  // FDA Search function
+  const performFdaSearch = async () => {
+    if (!fdaSearchQuery.trim()) {
+      Alert.alert('Enter Search', 'Please enter a medication name to search the FDA database.');
+      return;
+    }
+    
+    setFdaLoading(true);
+    setFdaResults([]);
+    
+    try {
+      const response = await api.get(`/api/medications/fda/search?query=${encodeURIComponent(fdaSearchQuery)}&limit=10`);
+      setFdaResults(response.results || []);
+      if (response.results?.length === 0) {
+        Alert.alert('No Results', 'No medications found matching your search. Try different keywords.');
+      }
+    } catch (error: any) {
+      console.error('FDA search error:', error);
+      Alert.alert('Search Error', error.message || 'Failed to search FDA database. Please try again.');
+    } finally {
+      setFdaLoading(false);
+    }
+  };
+
+  const addFdaMedToLocal = async (fdaMed: any) => {
+    const newMed: Medication = {
+      id: `fda_${fdaMed.id || Date.now()}`,
+      genericName: fdaMed.genericName || 'Unknown',
+      brandNames: fdaMed.brandNames || [],
+      drugClass: fdaMed.drugClass || 'Not classified',
+      uses: fdaMed.uses || [],
+      standardDosage: fdaMed.dosage || 'Consult provider',
+      sideEffects: fdaMed.sideEffects || [],
+      contraindications: fdaMed.contraindications || [],
+      interactions: [],
+      timing: 'As directed by provider',
+      isCustom: true,
+      source: 'FDA',
+    };
+    
+    // Check if already added
+    const exists = customMeds.find(m => m.id === newMed.id);
+    if (exists) {
+      Alert.alert('Already Added', 'This medication is already in your list.');
+      return;
+    }
+    
+    const updated = [...customMeds, newMed];
+    await Storage.set(KEYS.CUSTOM_MEDS, updated);
+    setCustomMeds(updated);
+    Alert.alert('Added', `${newMed.genericName} has been added to your medications list.`);
   };
 
   const resetPeptideForm = () => {
@@ -408,6 +467,89 @@ export default function ResearchScreen({ embedded = false }: ResearchScreenProps
             data={filteredMeds}
             keyExtractor={item => item.id}
             contentContainerStyle={styles.list}
+            ListHeaderComponent={
+              <>
+                {/* FDA Search Section */}
+                <View style={styles.fdaSearchSection}>
+                  <View style={styles.fdaSearchHeader}>
+                    <MaterialCommunityIcons name="hospital-box" size={20} color={colors.accent} />
+                    <Text style={styles.fdaSearchTitle}>Search FDA Database</Text>
+                  </View>
+                  <View style={styles.fdaSearchRow}>
+                    <TextInput
+                      testID="fda-search-input"
+                      style={styles.fdaSearchInput}
+                      placeholder="Search medications (e.g., metformin, aspirin)"
+                      placeholderTextColor={colors.textTertiary}
+                      value={fdaSearchQuery}
+                      onChangeText={setFdaSearchQuery}
+                      onSubmitEditing={performFdaSearch}
+                    />
+                    <TouchableOpacity 
+                      testID="fda-search-btn"
+                      style={styles.fdaSearchBtn} 
+                      onPress={performFdaSearch}
+                      disabled={fdaLoading}
+                    >
+                      {fdaLoading ? (
+                        <ActivityIndicator size="small" color={colors.primaryForeground} />
+                      ) : (
+                        <MaterialCommunityIcons name="magnify" size={20} color={colors.primaryForeground} />
+                      )}
+                    </TouchableOpacity>
+                  </View>
+                  
+                  {/* FDA Results */}
+                  {fdaResults.length > 0 && (
+                    <View style={styles.fdaResults}>
+                      <View style={styles.fdaResultsHeader}>
+                        <Text style={styles.fdaResultsTitle}>FDA Results ({fdaResults.length})</Text>
+                        <TouchableOpacity onPress={() => { setFdaResults([]); setFdaSearchQuery(''); }}>
+                          <Text style={styles.fdaClearBtn}>Clear</Text>
+                        </TouchableOpacity>
+                      </View>
+                      {fdaResults.map((med, index) => (
+                        <View key={med.id || index} style={styles.fdaResultCard}>
+                          <View style={styles.fdaResultHeader}>
+                            <View style={{ flex: 1 }}>
+                              <Text style={styles.fdaResultName}>{med.genericName || 'Unknown'}</Text>
+                              {med.brandNames?.length > 0 && (
+                                <Text style={styles.fdaBrandText}>{med.brandNames.slice(0, 3).join(', ')}</Text>
+                              )}
+                            </View>
+                            <TouchableOpacity 
+                              testID={`add-fda-med-${index}`}
+                              style={styles.fdaAddBtn}
+                              onPress={() => addFdaMedToLocal(med)}
+                            >
+                              <MaterialCommunityIcons name="plus" size={16} color={colors.primaryForeground} />
+                              <Text style={styles.fdaAddBtnText}>Add</Text>
+                            </TouchableOpacity>
+                          </View>
+                          {med.drugClass && (
+                            <View style={[styles.tag, { marginTop: 6 }]}>
+                              <Text style={styles.tagText}>{med.drugClass}</Text>
+                            </View>
+                          )}
+                          {med.uses?.length > 0 && (
+                            <Text style={styles.fdaUses} numberOfLines={2}>{med.uses[0]}</Text>
+                          )}
+                          {med.hasBoxedWarning && (
+                            <View style={styles.boxedWarning}>
+                              <MaterialCommunityIcons name="alert" size={14} color={colors.error} />
+                              <Text style={styles.boxedWarningText}>Boxed Warning</Text>
+                            </View>
+                          )}
+                        </View>
+                      ))}
+                    </View>
+                  )}
+                </View>
+
+                {/* Local Medications List Header */}
+                <Text style={styles.localMedsHeader}>Your Medications ({filteredMeds.length})</Text>
+              </>
+            }
             renderItem={({ item }) => (
               <View style={styles.card}>
                 <View style={styles.cardHeader}>
@@ -416,7 +558,11 @@ export default function ResearchScreen({ embedded = false }: ResearchScreenProps
                       <Text style={styles.cardName}>{item.genericName}</Text>
                       <Text style={styles.brandText}>{item.brandNames.join(', ')}</Text>
                     </View>
-                    {item.isCustom && <View style={styles.customBadge}><Text style={styles.customBadgeText}>Custom</Text></View>}
+                    {item.isCustom && (
+                      <View style={[styles.customBadge, item.source === 'FDA' && styles.fdaBadge]}>
+                        <Text style={styles.customBadgeText}>{item.source === 'FDA' ? 'FDA' : 'Custom'}</Text>
+                      </View>
+                    )}
                   </View>
                   {item.isCustom && (
                     <TouchableOpacity testID={`delete-med-${item.id}`} onPress={() => deleteCustomItem(item.id, 'medication')} style={styles.deleteBtn}>
@@ -873,4 +1019,26 @@ const createStyles = (colors: any) => StyleSheet.create({
   goalChipActive: { backgroundColor: colors.accent, borderColor: colors.accent },
   goalChipText: { ...typography.bodySm, color: colors.textSecondary },
   goalChipTextActive: { color: colors.primaryForeground, fontWeight: '600' },
+  // FDA Search styles
+  fdaSearchSection: { backgroundColor: colors.surface, borderRadius: 16, padding: spacing.md, marginBottom: spacing.md, borderWidth: 1, borderColor: colors.border },
+  fdaSearchHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: spacing.sm },
+  fdaSearchTitle: { ...typography.bodyBase, color: colors.textPrimary, fontWeight: '700' },
+  fdaSearchRow: { flexDirection: 'row', gap: 8 },
+  fdaSearchInput: { flex: 1, height: 44, backgroundColor: colors.secondary, borderRadius: 12, borderWidth: 1, borderColor: colors.border, paddingHorizontal: spacing.md, color: colors.textPrimary, fontSize: 14 },
+  fdaSearchBtn: { width: 44, height: 44, borderRadius: 12, backgroundColor: colors.accent, justifyContent: 'center', alignItems: 'center' },
+  fdaResults: { marginTop: spacing.md },
+  fdaResultsHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.sm },
+  fdaResultsTitle: { ...typography.bodySm, color: colors.textTertiary, fontWeight: '600' },
+  fdaClearBtn: { ...typography.bodySm, color: colors.accent },
+  fdaResultCard: { backgroundColor: colors.secondary, borderRadius: 12, padding: spacing.sm, marginBottom: spacing.xs, borderWidth: 1, borderColor: colors.border },
+  fdaResultHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  fdaResultName: { ...typography.bodyBase, color: colors.textPrimary, fontWeight: '600' },
+  fdaBrandText: { ...typography.caption, color: colors.textTertiary, fontSize: 11 },
+  fdaAddBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: colors.accent, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 12 },
+  fdaAddBtnText: { ...typography.caption, color: colors.primaryForeground, fontWeight: '700', fontSize: 11 },
+  fdaUses: { ...typography.caption, color: colors.textSecondary, marginTop: 6, fontSize: 11, lineHeight: 16 },
+  boxedWarning: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 6 },
+  boxedWarningText: { ...typography.caption, color: colors.error, fontSize: 10, fontWeight: '600' },
+  fdaBadge: { backgroundColor: 'rgba(67,160,71,0.2)' },
+  localMedsHeader: { ...typography.bodyBase, color: colors.textSecondary, fontWeight: '600', marginBottom: spacing.sm },
 });

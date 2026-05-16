@@ -6,11 +6,23 @@ import { useEffect } from 'react';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { ThemeProvider, useTheme } from '../src/context/ThemeContext';
 import { AuthProvider } from '../src/context/AuthContext';
+import { AppLockProvider, useAppLock } from '../src/context/AppLockContext';
+import { LockScreen } from '../src/components/LockScreen';
 
 SplashScreen.preventAutoHideAsync();
 
-function RootLayoutContent() {
+function AppContent() {
   const { colors, isDark } = useTheme();
+  const { isLocked, unlock } = useAppLock();
+
+  if (isLocked) {
+    return (
+      <>
+        <StatusBar style={isDark ? 'light' : 'dark'} />
+        <LockScreen onUnlock={unlock} />
+      </>
+    );
+  }
 
   return (
     <>
@@ -34,6 +46,14 @@ function RootLayoutContent() {
         />
       </Stack>
     </>
+  );
+}
+
+function RootLayoutContent() {
+  return (
+    <AppLockProvider>
+      <AppContent />
+    </AppLockProvider>
   );
 }
 
