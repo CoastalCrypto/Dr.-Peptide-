@@ -24,7 +24,7 @@
         "simulator": false
       },
       "env": {
-        "EXPO_PUBLIC_BACKEND_URL": "YOUR_BACKEND_URL_HERE"
+        "EXPO_PUBLIC_BACKEND_URL": "https://peptide-research-9.preview.emergentagent.com"
       }
     },
     "production": {
@@ -37,7 +37,7 @@
         "autoIncrement": "buildNumber"
       },
       "env": {
-        "EXPO_PUBLIC_BACKEND_URL": "YOUR_PRODUCTION_BACKEND_URL_HERE"
+        "EXPO_PUBLIC_BACKEND_URL": "https://peptide-research-9.preview.emergentagent.com"
       }
     }
   },
