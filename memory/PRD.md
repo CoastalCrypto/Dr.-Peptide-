@@ -280,6 +280,11 @@ All-in-one health companion app for researching, calculating dosages, tracking u
   - Applied to Journal log modal and AddRecurringItemModal
   - Configurable swipe direction (up/down/both)
   - Backdrop tap to close option
+- [x] **App Store Compliance Review** - Both platforms verified
+  - Created comprehensive APP_STORE_CHECKLIST.md
+  - iOS: Privacy manifest, encryption declarations, health data permissions
+  - Android: Data safety form answers, content rating questionnaire, permissions
+  - All required documentation in place
 
 ## Completed Tasks (Feb 15, 2026 - Previous Session)
 - [x] **Patch Verification** - User-applied patch verified stable (publishing infrastructure, bug fixes)
