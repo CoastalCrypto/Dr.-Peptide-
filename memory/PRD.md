@@ -251,7 +251,16 @@ All-in-one health companion app for researching, calculating dosages, tracking u
 
 ---
 
-## Completed Tasks (Feb 15, 2026 - Latest Session)
+## Completed Tasks (May 16, 2026 - Latest Session)
+- [x] **Swipe Navigation Implementation** - Complete navigation overhaul
+  - Users can now swipe left/right between the 5 main pages (Home, Calculator, Research, Journal, Profile)
+  - Page indicator dots at bottom with labels for each page
+  - Animated dot indicators showing current page
+  - Pull-to-refresh support on pages with data (Home, Journal, Research)
+  - Tap on dots to jump directly to any page
+  - Created SwipeableNavigation component using FlatList for cross-platform compatibility
+
+## Completed Tasks (Feb 15, 2026 - Previous Session)
 - [x] **Patch Verification** - User-applied patch verified stable (publishing infrastructure, bug fixes)
 - [x] **Local Push Notifications Integration** - Dose reminders now auto-schedule when creating recurring items
   - Connected AddRecurringItemModal to NotificationServiceV2

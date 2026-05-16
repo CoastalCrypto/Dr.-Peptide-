@@ -129,7 +129,11 @@ function WorkoutStreakBadge() {
   );
 }
 
-export default function HomeScreen() {
+interface HomeScreenProps {
+  embedded?: boolean;
+}
+
+export default function HomeScreen({ embedded = false }: HomeScreenProps) {
   const { colors } = useTheme();
   const today = new Date().toISOString().split('T')[0];
   
@@ -313,8 +317,8 @@ export default function HomeScreen() {
 
   const styles = createStyles(colors);
 
-  return (
-    <SafeAreaView style={styles.safe}>
+  const content = (
+    <>
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
         {/* Header */}
         <View style={styles.header}>
@@ -523,8 +527,14 @@ export default function HomeScreen() {
         visible={showInjectionTracker} 
         onClose={() => setShowInjectionTracker(false)} 
       />
-    </SafeAreaView>
+    </>
   );
+
+  if (embedded) {
+    return <View style={styles.safe}>{content}</View>;
+  }
+
+  return <SafeAreaView style={styles.safe}>{content}</SafeAreaView>;
 }
 
 const createStyles = (colors: any) => StyleSheet.create({

@@ -141,7 +141,11 @@ function MiniBarChart({ data, max, label, colors }: { data: number[]; max: numbe
   );
 }
 
-export default function JournalScreen() {
+interface JournalScreenProps {
+  embedded?: boolean;
+}
+
+export default function JournalScreen({ embedded = false }: JournalScreenProps) {
   const { colors } = useTheme();
   const [entries, setEntries] = useState<JournalEntry[]>([]);
   const [showLog, setShowLog] = useState(false);
@@ -238,8 +242,8 @@ export default function JournalScreen() {
 
   const styles = createStyles(colors);
 
-  return (
-    <SafeAreaView style={styles.safe}>
+  const content = (
+    <>
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
         <Text style={styles.title}>Health Journal</Text>
 
@@ -493,8 +497,14 @@ export default function JournalScreen() {
           </View>
         </KeyboardAvoidingView>
       </Modal>
-    </SafeAreaView>
+    </>
   );
+
+  if (embedded) {
+    return <View style={styles.safe}>{content}</View>;
+  }
+
+  return <SafeAreaView style={styles.safe}>{content}</SafeAreaView>;
 }
 
 const createStyles = (colors: any) => StyleSheet.create({

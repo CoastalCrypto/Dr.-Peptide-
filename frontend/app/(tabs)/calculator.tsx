@@ -60,7 +60,11 @@ function SyringeVisual({ fillPct, units, unitsToDraw, colors }: { fillPct: numbe
   );
 }
 
-export default function CalculatorScreen() {
+interface CalculatorScreenProps {
+  embedded?: boolean;
+}
+
+export default function CalculatorScreen({ embedded = false }: CalculatorScreenProps) {
   const { colors } = useTheme();
   const router = useRouter();
   const params = useLocalSearchParams<{ vialMg?: string; doseMcg?: string; bacWaterMl?: string }>();
@@ -192,8 +196,8 @@ export default function CalculatorScreen() {
 
   const styles = createStyles(colors);
 
-  return (
-    <SafeAreaView style={styles.safe}>
+  const content = (
+    <>
       <ScrollView 
         style={styles.container} 
         contentContainerStyle={styles.content}
@@ -433,8 +437,14 @@ export default function CalculatorScreen() {
           </ScrollView>
         </View>
       </Modal>
-    </SafeAreaView>
+    </>
   );
+
+  if (embedded) {
+    return <View style={styles.safe}>{content}</View>;
+  }
+
+  return <SafeAreaView style={styles.safe}>{content}</SafeAreaView>;
 }
 
 const createStyles = (colors: any) => StyleSheet.create({

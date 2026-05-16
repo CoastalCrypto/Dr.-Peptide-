@@ -22,7 +22,11 @@ interface Settings {
 
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-export default function ProfileScreen() {
+interface ProfileScreenProps {
+  embedded?: boolean;
+}
+
+export default function ProfileScreen({ embedded = false }: ProfileScreenProps) {
   const { colors, mode, setMode, isDark } = useTheme();
   const { user, isAuthenticated, login, logout, isLoading: authLoading } = useAuth();
   const router = useRouter();
@@ -400,8 +404,8 @@ export default function ProfileScreen() {
 
   const styles = createStyles(colors);
 
-  return (
-    <SafeAreaView style={styles.safe}>
+  const content = (
+    <>
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
         <Text style={styles.title}>Profile</Text>
 
@@ -946,8 +950,14 @@ export default function ProfileScreen() {
           </View>
         </View>
       </Modal>
-    </SafeAreaView>
+    </>
   );
+
+  if (embedded) {
+    return <View style={styles.safe}>{content}</View>;
+  }
+
+  return <SafeAreaView style={styles.safe}>{content}</SafeAreaView>;
 }
 
 const createStyles = (colors: any) => StyleSheet.create({

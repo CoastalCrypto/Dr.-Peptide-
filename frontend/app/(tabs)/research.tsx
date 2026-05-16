@@ -28,7 +28,11 @@ const GOAL_ICONS: Record<string, string> = {
   'Other': 'dots-horizontal-circle',
 };
 
-export default function ResearchScreen() {
+interface ResearchScreenProps {
+  embedded?: boolean;
+}
+
+export default function ResearchScreen({ embedded = false }: ResearchScreenProps) {
   const { colors } = useTheme();
   const router = useRouter();
   const [search, setSearch] = useState('');
@@ -229,8 +233,8 @@ export default function ResearchScreen() {
 
   const styles = createStyles(colors);
 
-  return (
-    <SafeAreaView style={styles.safe}>
+  const content = (
+    <>
       <View style={styles.container}>
         <View style={styles.titleRow}>
           <Text style={styles.title}>Research</Text>
@@ -745,8 +749,14 @@ export default function ResearchScreen() {
           </View>
         </KeyboardAvoidingView>
       </Modal>
-    </SafeAreaView>
+    </>
   );
+
+  if (embedded) {
+    return <View style={styles.safe}>{content}</View>;
+  }
+
+  return <SafeAreaView style={styles.safe}>{content}</SafeAreaView>;
 }
 
 const createStyles = (colors: any) => StyleSheet.create({
