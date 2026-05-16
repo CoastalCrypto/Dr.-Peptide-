@@ -3,7 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-  Modal,
   TouchableOpacity,
   TextInput,
   ScrollView,
@@ -24,6 +23,7 @@ import {
 } from '../types/recurring';
 import { recurringItemsApi } from '../utils/api';
 import { NotificationServiceV2 } from '../services/notificationsV2';
+import { SwipeableModal } from './SwipeableModal';
 
 interface AddRecurringItemModalProps {
   visible: boolean;
@@ -164,27 +164,26 @@ export function AddRecurringItemModal({ visible, onClose, onSuccess, editItem }:
   const styles = createStyles(colors);
   
   return (
-    <Modal visible={visible} animationType="slide" transparent>
-      <View style={styles.overlay}>
-        <View style={styles.modal}>
-          <View style={styles.header}>
-            <Text style={styles.title}>{editItem ? 'Edit' : 'Add'} Recurring Item</Text>
-            <TouchableOpacity onPress={onClose} testID="modal-close">
-              <MaterialCommunityIcons name="close" size={24} color={colors.textSecondary} />
-            </TouchableOpacity>
-          </View>
-          
-          <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-            {/* Name Input */}
-            <Text style={styles.label}>Name *</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="e.g., BPC-157, Vitamin D"
-              placeholderTextColor={colors.textTertiary}
-              value={name}
-              onChangeText={setName}
-              testID="recurring-name-input"
-            />
+    <SwipeableModal visible={visible} onClose={onClose} closeOnBackdropPress={false}>
+      <View style={styles.modal}>
+        <View style={styles.header}>
+          <Text style={styles.title}>{editItem ? 'Edit' : 'Add'} Recurring Item</Text>
+          <TouchableOpacity onPress={onClose} testID="modal-close">
+            <MaterialCommunityIcons name="close" size={24} color={colors.textSecondary} />
+          </TouchableOpacity>
+        </View>
+        
+        <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+          {/* Name Input */}
+          <Text style={styles.label}>Name *</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="e.g., BPC-157, Vitamin D"
+            placeholderTextColor={colors.textTertiary}
+            value={name}
+            onChangeText={setName}
+            testID="recurring-name-input"
+          />
             
             {/* Category */}
             <Text style={styles.label}>Category</Text>
@@ -397,32 +396,24 @@ export function AddRecurringItemModal({ visible, onClose, onSuccess, editItem }:
             <TouchableOpacity style={styles.cancelBtn} onPress={onClose} testID="modal-cancel">
               <Text style={styles.cancelBtnText}>Cancel</Text>
             </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.saveBtn, loading && styles.saveBtnDisabled]}
-              onPress={handleSave}
-              disabled={loading}
-              testID="modal-save"
-            >
-              <Text style={styles.saveBtnText}>{loading ? 'Saving...' : editItem ? 'Update' : 'Add Item'}</Text>
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity
+            style={[styles.saveBtn, loading && styles.saveBtnDisabled]}
+            onPress={handleSave}
+            disabled={loading}
+            testID="modal-save"
+          >
+            <Text style={styles.saveBtnText}>{loading ? 'Saving...' : editItem ? 'Update' : 'Add Item'}</Text>
+          </TouchableOpacity>
         </View>
       </View>
-    </Modal>
+    </SwipeableModal>
   );
 }
 
 const createStyles = (colors: any) =>
   StyleSheet.create({
-    overlay: {
-      flex: 1,
-      backgroundColor: colors.overlay,
-      justifyContent: 'flex-end',
-    },
     modal: {
       backgroundColor: colors.surface,
-      borderTopLeftRadius: 24,
-      borderTopRightRadius: 24,
       maxHeight: '92%',
     },
     header: {

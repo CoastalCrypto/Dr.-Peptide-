@@ -274,6 +274,12 @@ All-in-one health companion app for researching, calculating dosages, tracking u
   - Compare mode toggle in Research > Peptides tab
   - Multi-select up to 3 peptides for side-by-side comparison
   - Comparison modal shows: Goals, Routes, Frequency, Dosage, Cycle, Description
+- [x] **Swipeable Modals** - Enhanced UX for modals
+  - Created SwipeableModal component with PanResponder for swipe-to-dismiss
+  - Swipe indicator bar at top of modals
+  - Applied to Journal log modal and AddRecurringItemModal
+  - Configurable swipe direction (up/down/both)
+  - Backdrop tap to close option
 
 ## Completed Tasks (Feb 15, 2026 - Previous Session)
 - [x] **Patch Verification** - User-applied patch verified stable (publishing infrastructure, bug fixes)

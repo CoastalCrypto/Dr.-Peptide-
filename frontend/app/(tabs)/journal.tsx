@@ -1,11 +1,12 @@
 import { useState, useCallback, useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, TextInput, Modal, KeyboardAvoidingView, Platform, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, TextInput, KeyboardAvoidingView, Platform, Dimensions } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTheme } from '../../src/context/ThemeContext';
 import { typography, spacing } from '../../src/theme';
 import { Storage, KEYS } from '../../src/utils/storage';
 import { useFocusEffect } from 'expo-router';
 import { CartesianChart, Bar, Line } from 'victory-native';
+import { SwipeableModal } from '../../src/components/SwipeableModal';
 
 interface JournalEntry {
   id: string;
@@ -392,11 +393,10 @@ export default function JournalScreen({ embedded = false }: JournalScreenProps) 
         )}
       </ScrollView>
 
-      <Modal visible={showLog} animationType="slide" transparent>
+      <SwipeableModal visible={showLog} onClose={() => { setShowLog(false); resetForm(); }} closeOnBackdropPress={false}>
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
-          <View style={styles.modalOverlay}>
-            <ScrollView style={styles.modal} contentContainerStyle={styles.modalContent}>
-              <Text style={styles.modalTitle}>Log Entry — {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</Text>
+          <ScrollView style={styles.modal} contentContainerStyle={styles.modalContent}>
+            <Text style={styles.modalTitle}>Log Entry — {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</Text>
 
               <Text style={styles.fieldLabel}>Weight (lbs)</Text>
               <TextInput testID="journal-weight" style={styles.input} placeholder="e.g., 185" placeholderTextColor={colors.textTertiary} value={weight} onChangeText={setWeight} keyboardType="numeric" />
@@ -494,9 +494,8 @@ export default function JournalScreen({ embedded = false }: JournalScreenProps) 
                 </TouchableOpacity>
               </View>
             </ScrollView>
-          </View>
         </KeyboardAvoidingView>
-      </Modal>
+      </SwipeableModal>
     </>
   );
 
