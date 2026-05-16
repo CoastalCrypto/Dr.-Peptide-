@@ -259,6 +259,21 @@ All-in-one health companion app for researching, calculating dosages, tracking u
   - Pull-to-refresh support on pages with data (Home, Journal, Research)
   - Tap on dots to jump directly to any page
   - Created SwipeableNavigation component using FlatList for cross-platform compatibility
+- [x] **OpenFDA API Integration** - Live FDA medication database search
+  - Search bar in Research > Medications tab
+  - Returns real-time medication info from FDA database
+  - "Add" button to add FDA medications to local list
+  - Shows drug class, uses, brand names, and boxed warning indicators
+- [x] **Biometric/PIN Code App Lock** - Full security implementation
+  - LockScreen component with PIN keypad and biometric option
+  - AppLockContext for managing lock state across app
+  - Auto-lock on app background/foreground transitions
+  - PIN storage via expo-secure-store (native) / localStorage (web)
+  - 5 attempt lockout with 30-second cooldown
+- [x] **Peptide Comparison Tool** - VERIFIED WORKING
+  - Compare mode toggle in Research > Peptides tab
+  - Multi-select up to 3 peptides for side-by-side comparison
+  - Comparison modal shows: Goals, Routes, Frequency, Dosage, Cycle, Description
 
 ## Completed Tasks (Feb 15, 2026 - Previous Session)
 - [x] **Patch Verification** - User-applied patch verified stable (publishing infrastructure, bug fixes)
