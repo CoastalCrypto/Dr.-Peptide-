@@ -233,7 +233,7 @@ export default function CalculatorScreen({ embedded = false }: CalculatorScreenP
         </View>
 
         <Text style={styles.label}>Vial Amount (mg)</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} nestedScrollEnabled={true}>
           <View style={styles.optionsRow}>
             {VIAL_OPTIONS.map(v => (
               <TouchableOpacity key={v} testID={`vial-${v}`} style={[styles.optionBtn, vialMg === v && styles.optionBtnActive]} onPress={() => setVialMg(v)}>
@@ -247,7 +247,7 @@ export default function CalculatorScreen({ embedded = false }: CalculatorScreenP
         </ScrollView>
 
         <Text style={styles.label}>BAC Water Added (mL)</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} nestedScrollEnabled={true}>
           <View style={styles.optionsRow}>
             {WATER_OPTIONS.map(w => (
               <TouchableOpacity key={w} testID={`water-${w}`} style={[styles.optionBtn, bacWaterMl === w && styles.optionBtnActive]} onPress={() => setBacWaterMl(w)}>
@@ -261,7 +261,7 @@ export default function CalculatorScreen({ embedded = false }: CalculatorScreenP
         </ScrollView>
 
         <Text style={styles.label}>Desired Dose</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} nestedScrollEnabled={true}>
           <View style={styles.optionsRow}>
             {DOSE_OPTIONS.map(d => (
               <TouchableOpacity key={d.mcg} testID={`dose-${d.mcg}`} style={[styles.optionBtn, doseMcg === d.mcg && styles.optionBtnActive]} onPress={() => setDoseMcg(d.mcg)}>

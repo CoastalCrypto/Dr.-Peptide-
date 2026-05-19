@@ -88,6 +88,10 @@ export function SwipeableNavigation({ pages, initialPage = 0 }: SwipeableNavigat
         pagingEnabled
         showsHorizontalScrollIndicator={false}
         bounces={false}
+        nestedScrollEnabled={true}
+        scrollEnabled={true}
+        directionalLockEnabled={true}
+        disableIntervalMomentum={true}
         onScroll={Animated.event(
           [{ nativeEvent: { contentOffset: { x: scrollX } } }],
           { useNativeDriver: false }
