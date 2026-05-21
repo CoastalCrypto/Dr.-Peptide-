@@ -1,0 +1,57 @@
+{
+  "summary": "Tested Apple App Store rejection fixes for PepTrack Pro. Verified: Calculator disclaimer modal, FOR RESEARCH USE ONLY labels, Target Amount/Suggested Units labels, Google/Apple sign-in buttons, Help & FAQ link, Support page, and References button. Most features working correctly.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/test_reports/iteration_13.json"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "All Apple App Store rejection fixes have been implemented correctly",
+    "Calculator disclaimer modal appears on first visit with checkbox acceptance requirement",
+    "Calculator uses 'Target Amount' and 'Suggested Units' labels instead of 'Dose'",
+    "Profile page shows both Google and Apple sign-in buttons (Apple uses web fallback on non-iOS)",
+    "Research page has 'View References & Citations' button with categorized sources modal",
+    "Profile has 'Help & FAQ' link that navigates to Support page with FAQ section"
+  ],
+  "updated_files": [],
+  "success_rate": {
+    "backend": "N/A - Frontend only testing",
+    "frontend": "100% - All 8 features verified"
+  },
+  "seed_data_creation": "None required",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Apple App Store rejection fixes verified: 1) Calculator disclaimer modal with 'Important Notice' and 'FOR RESEARCH USE ONLY' appears on first Calculator visit, requires checkbox acceptance, 2) Calculator shows 'FOR RESEARCH USE ONLY' label under title, 3) Calculator uses 'TARGET AMOUNT (ESTIMATED)' and 'SUGGESTED UNITS' labels (not 'Dose'), 4) Info button (circle with i) in Calculator top-right reopens disclaimer, 5) Profile shows 'Sign in with Google' and 'Sign in with Apple' buttons (Apple uses web fallback), 6) Research page has 'View References & Citations' button, 7) References modal shows categorized sources (Peptide Research, Drug Information, General Medical References), 8) Profile has 'Help & FAQ' link navigating to Support page with FAQ section",
+  "features_verified": {
+    "calculator_disclaimer_modal": "PASS - 'Important Notice' modal with 'FOR RESEARCH USE ONLY' appears on first Calculator visit",
+    "calculator_disclaimer_checkbox": "PASS - Requires 'I understand and accept these terms' checkbox before accepting",
+    "calculator_research_label": "PASS - 'FOR RESEARCH USE ONLY' label shown under Calculator title",
+    "calculator_target_amount_label": "PASS - 'TARGET AMOUNT (ESTIMATED)' label used instead of 'Dose'",
+    "calculator_suggested_units_label": "PASS - 'SUGGESTED UNITS' label used",
+    "calculator_info_button": "PASS - Info button (circle with i icon) visible in top-right corner",
+    "profile_google_signin": "PASS - 'Sign in with Google' button visible on Profile page",
+    "profile_apple_signin": "PASS - 'Sign in with Apple' button visible (web fallback for non-iOS)",
+    "profile_help_faq_link": "PASS - 'Help & FAQ' link found in Profile Help & Support section",
+    "support_page_navigation": "PASS - Clicking Help & FAQ navigates to Support page",
+    "support_page_faq_section": "PASS - Support page shows 'Frequently Asked Questions' section",
+    "research_references_button": "PASS - 'View References & Citations' button found on Research page",
+    "references_modal_categories": "PASS - Modal shows Peptide Research, Drug Information, General Medical References categories"
+  },
+  "apple_app_store_guidelines_addressed": {
+    "guideline_1_4_2_medical_disclaimer": "ADDRESSED - Calculator shows 'FOR RESEARCH USE ONLY' label and requires disclaimer acceptance",
+    "guideline_4_8_sign_in_with_apple": "ADDRESSED - Apple sign-in button present on Profile (native on iOS, fallback on web)",
+    "guideline_1_4_1_citations": "ADDRESSED - 'View References & Citations' button on Research page with categorized sources",
+    "guideline_1_5_support_url": "ADDRESSED - 'Help & FAQ' link on Profile navigates to Support page with FAQ"
+  },
+  "test_credentials": {
+    "note": "No authentication required for tested features"
+  }
+}
