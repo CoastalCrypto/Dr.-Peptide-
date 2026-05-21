@@ -7,6 +7,7 @@ import { typography, spacing, DISCLAIMER } from '../../src/theme';
 import { Storage, KEYS } from '../../src/utils/storage';
 import { useLocalSearchParams, useFocusEffect, useRouter } from 'expo-router';
 import { RecurringItem, DAYS_OF_WEEK } from '../../src/types/recurring';
+import { CalculatorDisclaimer, hasAcceptedCalculatorDisclaimer } from '../../src/components/CalculatorDisclaimer';
 
 const SYRINGE_OPTIONS = [
   { label: '0.3 mL (30u)', ml: 0.3, units: 30 },
@@ -15,7 +16,7 @@ const SYRINGE_OPTIONS = [
 ];
 const VIAL_OPTIONS = [1, 2, 5, 10, 15, 20, 50];
 const WATER_OPTIONS = [0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 5.0];
-const DOSE_OPTIONS = [
+const AMOUNT_OPTIONS = [
   { label: '50 mcg', mcg: 50 }, { label: '100 mcg', mcg: 100 }, { label: '250 mcg', mcg: 250 },
   { label: '500 mcg', mcg: 500 }, { label: '1 mg', mcg: 1000 }, { label: '2 mg', mcg: 2000 },
   { label: '2.5 mg', mcg: 2500 }, { label: '5 mg', mcg: 5000 }, { label: '7.5 mg', mcg: 7500 },
@@ -84,6 +85,23 @@ export default function CalculatorScreen({ embedded = false }: CalculatorScreenP
   const [scheduleFrequency, setScheduleFrequency] = useState<'daily' | 'weekly'>('daily');
   const [scheduleDays, setScheduleDays] = useState<number[]>([0, 1, 2, 3, 4, 5, 6]);
   const [scheduleTime, setScheduleTime] = useState('Morning');
+  
+  // Disclaimer state
+  const [showDisclaimer, setShowDisclaimer] = useState(false);
+  const [disclaimerAccepted, setDisclaimerAccepted] = useState(false);
+  const [isFirstTimeDisclaimer, setIsFirstTimeDisclaimer] = useState(true);
+  
+  // Check if disclaimer has been accepted on mount
+  useEffect(() => {
+    hasAcceptedCalculatorDisclaimer().then(accepted => {
+      if (!accepted) {
+        setShowDisclaimer(true);
+        setIsFirstTimeDisclaimer(true);
+      } else {
+        setDisclaimerAccepted(true);
+      }
+    });
+  }, []);
 
   useEffect(() => {
     if (params.vialMg) setVialMg(parseFloat(params.vialMg));
@@ -205,7 +223,19 @@ export default function CalculatorScreen({ embedded = false }: CalculatorScreenP
         bounces={true}
         nestedScrollEnabled={true}
       >
-        <Text style={styles.title}>Peptide Calculator</Text>
+        {/* Header with title and disclaimer button */}
+        <View style={styles.headerRow}>
+          <View>
+            <Text style={styles.title}>Reconstitution Calculator</Text>
+            <Text style={styles.researchLabel}>FOR RESEARCH USE ONLY</Text>
+          </View>
+          <TouchableOpacity 
+            style={styles.disclaimerBtn}
+            onPress={() => { setShowDisclaimer(true); setIsFirstTimeDisclaimer(false); }}
+          >
+            <MaterialCommunityIcons name="information-outline" size={20} color={colors.warning} />
+          </TouchableOpacity>
+        </View>
 
         {presets.length > 0 && (
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.presetsRow}>
@@ -260,10 +290,10 @@ export default function CalculatorScreen({ embedded = false }: CalculatorScreenP
           </View>
         </ScrollView>
 
-        <Text style={styles.label}>Desired Dose</Text>
+        <Text style={styles.label}>Target Amount (Estimated)</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} nestedScrollEnabled={true}>
           <View style={styles.optionsRow}>
-            {DOSE_OPTIONS.map(d => (
+            {AMOUNT_OPTIONS.map(d => (
               <TouchableOpacity key={d.mcg} testID={`dose-${d.mcg}`} style={[styles.optionBtn, doseMcg === d.mcg && styles.optionBtnActive]} onPress={() => setDoseMcg(d.mcg)}>
                 <Text style={[styles.optionText, doseMcg === d.mcg && styles.optionTextActive]}>{d.label}</Text>
               </TouchableOpacity>
@@ -277,7 +307,7 @@ export default function CalculatorScreen({ embedded = false }: CalculatorScreenP
         {exceedsSyringe && (
           <View style={styles.warningBanner}>
             <MaterialCommunityIcons name="alert" size={20} color={colors.error} />
-            <Text style={styles.warningText}>Draw volume exceeds syringe capacity! Use a larger syringe or reduce dose.</Text>
+            <Text style={styles.warningText}>Draw volume exceeds syringe capacity! Use a larger syringe or adjust amount.</Text>
           </View>
         )}
 
@@ -285,14 +315,14 @@ export default function CalculatorScreen({ embedded = false }: CalculatorScreenP
 
         <View style={styles.resultsGrid}>
           <View style={styles.resultCard}>
-            <Text style={styles.resultLabel}>Units to Draw</Text>
+            <Text style={styles.resultLabel}>Suggested Units</Text>
             <Text testID="calc-units" style={styles.resultValue}>{unitsToDraw.toFixed(1)}</Text>
-            <Text style={styles.resultUnit}>units</Text>
+            <Text style={styles.resultUnit}>units (est.)</Text>
           </View>
           <View style={styles.resultCard}>
-            <Text style={styles.resultLabel}>Volume to Draw</Text>
+            <Text style={styles.resultLabel}>Suggested Volume</Text>
             <Text testID="calc-ml" style={styles.resultValue}>{mlToDraw.toFixed(3)}</Text>
-            <Text style={styles.resultUnit}>mL</Text>
+            <Text style={styles.resultUnit}>mL (est.)</Text>
           </View>
           <View style={styles.resultCard}>
             <Text style={styles.resultLabel}>Concentration</Text>
@@ -437,6 +467,13 @@ export default function CalculatorScreen({ embedded = false }: CalculatorScreenP
           </ScrollView>
         </View>
       </Modal>
+      
+      {/* Calculator Disclaimer Modal */}
+      <CalculatorDisclaimer 
+        visible={showDisclaimer} 
+        onAccept={() => { setShowDisclaimer(false); setDisclaimerAccepted(true); }}
+        isFirstTime={isFirstTimeDisclaimer}
+      />
     </>
   );
 
@@ -451,7 +488,10 @@ const createStyles = (colors: any) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background },
   container: { flex: 1 },
   content: { padding: spacing.lg, paddingBottom: 180, ...(Platform.OS === 'web' ? { minHeight: '100%' } : {}) },
-  title: { ...typography.h1, color: colors.textPrimary, marginBottom: spacing.md },
+  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: spacing.md },
+  title: { ...typography.h1, color: colors.textPrimary, fontSize: 24 },
+  researchLabel: { ...typography.caption, color: colors.warning, fontWeight: '700', letterSpacing: 1, marginTop: 4 },
+  disclaimerBtn: { padding: 8, backgroundColor: colors.surface, borderRadius: 20, borderWidth: 1, borderColor: colors.warning },
   presetsRow: { marginBottom: spacing.md, flexGrow: 0 },
   presetChip: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, marginRight: 8, gap: 6, borderWidth: 1, borderColor: colors.border },
   presetChipText: { ...typography.bodySm, color: colors.accent },

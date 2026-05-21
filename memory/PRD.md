@@ -251,7 +251,29 @@ All-in-one health companion app for researching, calculating dosages, tracking u
 
 ---
 
-## Completed Tasks (May 16, 2026 - Latest Session)
+## Completed Tasks (May 21, 2026 - Apple Rejection Fixes)
+- [x] **GUIDELINE 1.4.2 - Medical Dosage Calculator Disclaimer**
+  - Created CalculatorDisclaimer modal component with mandatory first-time acceptance
+  - Displays on first Calculator use with checkbox confirmation required
+  - Added "FOR RESEARCH USE ONLY" label on Calculator screen
+  - Reframed language: "Dose" → "Target Amount", "Units to Draw" → "Suggested Units"
+  - Info button to re-view disclaimer anytime
+- [x] **GUIDELINE 4.8 - Sign in with Apple**
+  - Added expo-apple-authentication package
+  - Added Sign in with Apple button alongside Google Sign In
+  - Configured app.json with usesAppleSignIn: true
+  - Native Apple button on iOS, fallback button on other platforms
+- [x] **GUIDELINE 1.4.1 - Medical Citations**
+  - Created ReferencesModal component with categorized sources
+  - Added "View References & Citations" button on Research screen
+  - Citations include: PubMed, FDA, OpenFDA, NIH DailyMed, WHO, ClinicalTrials.gov
+- [x] **GUIDELINE 1.5 - Support URL**
+  - Created /app/support.tsx page with FAQ, contact form, email support
+  - Added "Help & Support" section in Profile screen
+  - Support email: support@peptrackpro.com
+  - Includes app version info and legal links
+
+## Completed Tasks (May 16, 2026 - Previous Session)
 - [x] **Swipe Navigation Implementation** - Complete navigation overhaul
   - Users can now swipe left/right between the 5 main pages (Home, Calculator, Research, Journal, Profile)
   - Page indicator dots at bottom with labels for each page

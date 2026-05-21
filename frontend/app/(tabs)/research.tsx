@@ -8,6 +8,7 @@ import { peptides as bundledPeptides, GOAL_CATEGORIES, Peptide } from '../../src
 import { medications as bundledMeds, Medication } from '../../src/data/medications';
 import { Storage, KEYS } from '../../src/utils/storage';
 import { api } from '../../src/utils/api';
+import { ReferencesModal } from '../../src/components/ReferencesModal';
 
 type Tab = 'peptides' | 'medications';
 type AddType = 'peptide' | 'medication' | null;
@@ -59,6 +60,9 @@ export default function ResearchScreen({ embedded = false }: ResearchScreenProps
   const [compareMode, setCompareMode] = useState(false);
   const [selectedForCompare, setSelectedForCompare] = useState<string[]>([]);
   const [showCompareModal, setShowCompareModal] = useState(false);
+  
+  // References modal state
+  const [showReferences, setShowReferences] = useState(false);
 
   // Custom peptide form
   const [cpName, setCpName] = useState('');
@@ -319,6 +323,12 @@ export default function ResearchScreen({ embedded = false }: ResearchScreenProps
           <MaterialCommunityIcons name="brain" size={20} color={colors.primaryForeground} />
           <Text style={styles.aiSearchBtnText}>AI Web Search</Text>
           <MaterialCommunityIcons name="arrow-right" size={18} color={colors.primaryForeground} />
+        </TouchableOpacity>
+        
+        {/* References Button */}
+        <TouchableOpacity testID="references-btn" style={styles.referencesBtn} onPress={() => setShowReferences(true)}>
+          <MaterialCommunityIcons name="book-open-variant" size={18} color={colors.accent} />
+          <Text style={styles.referencesBtnText}>View References & Citations</Text>
         </TouchableOpacity>
         
         {/* Compare Button */}
@@ -895,6 +905,9 @@ export default function ResearchScreen({ embedded = false }: ResearchScreenProps
           </View>
         </KeyboardAvoidingView>
       </Modal>
+      
+      {/* References Modal */}
+      <ReferencesModal visible={showReferences} onClose={() => setShowReferences(false)} />
     </>
   );
 
@@ -915,8 +928,10 @@ const createStyles = (colors: any) => StyleSheet.create({
   addBtnText: { ...typography.bodySm, color: colors.primaryForeground, fontWeight: '700' },
   searchBar: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, borderRadius: 14, paddingHorizontal: spacing.md, height: 52, borderWidth: 1, borderColor: colors.border, marginBottom: spacing.sm, gap: 8 },
   searchInput: { flex: 1, color: colors.textPrimary, fontSize: 16 },
-  aiSearchBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: colors.accent, borderRadius: 12, paddingVertical: 12, marginBottom: spacing.md, gap: 8 },
+  aiSearchBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: colors.accent, borderRadius: 12, paddingVertical: 12, marginBottom: spacing.sm, gap: 8 },
   aiSearchBtnText: { ...typography.bodyBase, color: colors.primaryForeground, fontWeight: '700' },
+  referencesBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: colors.surface, borderRadius: 12, paddingVertical: 10, marginBottom: spacing.md, gap: 8, borderWidth: 1, borderColor: colors.border },
+  referencesBtnText: { ...typography.bodySm, color: colors.accent, fontWeight: '600' },
   tabs: { flexDirection: 'row', marginBottom: spacing.md, gap: 8 },
   tab: { flex: 1, paddingVertical: 12, borderRadius: 12, backgroundColor: colors.surface, alignItems: 'center', borderWidth: 1, borderColor: colors.border },
   tabActive: { backgroundColor: colors.primary, borderColor: colors.primary },

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, Switch, Alert, Linking, Modal, TextInput, ActivityIndicator, Platform } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Constants from 'expo-constants';
+import * as AppleAuthentication from 'expo-apple-authentication';
 import { useTheme } from '../../src/context/ThemeContext';
 import { useAuth } from '../../src/context/AuthContext';
 import { useAppLock } from '../../src/context/AppLockContext';
@@ -345,6 +346,43 @@ export default function ProfileScreen({ embedded = false }: ProfileScreenProps) 
     login();
   };
 
+  const handleAppleAuth = async () => {
+    try {
+      const credential = await AppleAuthentication.signInAsync({
+        requestedScopes: [
+          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+          AppleAuthentication.AppleAuthenticationScope.EMAIL,
+        ],
+      });
+      
+      // Process the Apple credential
+      // The credential contains: user, email, fullName, identityToken, authorizationCode
+      if (credential.user) {
+        // Create a user object similar to Google auth
+        const appleUser = {
+          id: credential.user,
+          email: credential.email || 'Apple User',
+          name: credential.fullName?.givenName 
+            ? `${credential.fullName.givenName} ${credential.fullName.familyName || ''}`.trim()
+            : 'Apple User',
+          provider: 'apple',
+        };
+        
+        // Store Apple user similar to Google auth
+        await Storage.set('peptrack_apple_user', appleUser);
+        
+        // You would typically send the identityToken to your backend for verification
+        Alert.alert('Success', 'Signed in with Apple successfully!');
+      }
+    } catch (error: any) {
+      if (error.code === 'ERR_REQUEST_CANCELED') {
+        // User cancelled the sign in
+        return;
+      }
+      Alert.alert('Sign In Failed', 'Could not sign in with Apple. Please try again.');
+    }
+  };
+
   const handleLogout = async () => {
     // Use the logout function from AuthContext
     await logout();
@@ -424,10 +462,31 @@ export default function ProfileScreen({ embedded = false }: ProfileScreenProps) 
         </View>
 
         {!user ? (
-          <TouchableOpacity testID="google-auth-btn" style={styles.authBtn} onPress={handleGoogleAuth}>
-            <MaterialCommunityIcons name="google" size={22} color={colors.primaryForeground} />
-            <Text style={styles.authBtnText}>Sign in with Google for Cloud Backup</Text>
-          </TouchableOpacity>
+          <View style={styles.authButtonsContainer}>
+            <TouchableOpacity testID="google-auth-btn" style={styles.authBtn} onPress={handleGoogleAuth}>
+              <MaterialCommunityIcons name="google" size={22} color={colors.primaryForeground} />
+              <Text style={styles.authBtnText}>Sign in with Google</Text>
+            </TouchableOpacity>
+            
+            {Platform.OS === 'ios' && (
+              <AppleAuthentication.AppleAuthenticationButton
+                buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
+                buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
+                cornerRadius={12}
+                style={styles.appleBtn}
+                onPress={handleAppleAuth}
+              />
+            )}
+            
+            {Platform.OS !== 'ios' && (
+              <TouchableOpacity testID="apple-auth-btn" style={styles.appleAuthBtn} onPress={() => Alert.alert('Apple Sign In', 'Sign in with Apple is only available on iOS devices.')}>
+                <MaterialCommunityIcons name="apple" size={22} color="#FFFFFF" />
+                <Text style={styles.appleAuthBtnText}>Sign in with Apple</Text>
+              </TouchableOpacity>
+            )}
+            
+            <Text style={styles.authHint}>Sign in to enable Cloud Backup</Text>
+          </View>
         ) : (
           <TouchableOpacity testID="logout-btn" style={styles.logoutBtn} onPress={handleLogout}>
             <Text style={styles.logoutBtnText}>Sign Out</Text>
@@ -800,6 +859,25 @@ export default function ProfileScreen({ embedded = false }: ProfileScreenProps) 
           </>
         )}
 
+        <Text style={styles.sectionTitle}>Help & Support</Text>
+        <View style={styles.settingsCard}>
+          <TouchableOpacity style={styles.settingRow} onPress={() => router.push('/support')}>
+            <View style={styles.settingInfo}>
+              <MaterialCommunityIcons name="help-circle-outline" size={22} color={colors.accent} />
+              <Text style={styles.settingLabel}>Help & FAQ</Text>
+            </View>
+            <MaterialCommunityIcons name="chevron-right" size={22} color={colors.textTertiary} />
+          </TouchableOpacity>
+          <View style={styles.divider} />
+          <TouchableOpacity style={styles.settingRow} onPress={() => Linking.openURL('mailto:support@peptrackpro.com?subject=PepTrack Pro Support')}>
+            <View style={styles.settingInfo}>
+              <MaterialCommunityIcons name="email-outline" size={22} color={colors.accent} />
+              <Text style={styles.settingLabel}>Contact Support</Text>
+            </View>
+            <MaterialCommunityIcons name="chevron-right" size={22} color={colors.textTertiary} />
+          </TouchableOpacity>
+        </View>
+
         <Text style={styles.sectionTitle}>Legal</Text>
         <View style={styles.settingsCard}>
           <TouchableOpacity style={styles.settingRow} onPress={() => router.push('/privacy-policy')}>
@@ -974,8 +1052,13 @@ const createStyles = (colors: any) => StyleSheet.create({
   profileInfo: { flex: 1 },
   profileName: { ...typography.h3, color: colors.textPrimary },
   profileEmail: { ...typography.bodySm, color: colors.textSecondary, marginTop: 2 },
-  authBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: colors.primary, height: 56, borderRadius: 28, gap: 10, marginBottom: spacing.lg },
+  authButtonsContainer: { marginBottom: spacing.lg },
+  authBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: colors.primary, height: 52, borderRadius: 12, gap: 10, marginBottom: spacing.sm },
   authBtnText: { ...typography.bodyBase, color: colors.primaryForeground, fontWeight: '600' },
+  appleBtn: { height: 52, marginBottom: spacing.sm },
+  appleAuthBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#000000', height: 52, borderRadius: 12, gap: 10, marginBottom: spacing.sm },
+  appleAuthBtnText: { ...typography.bodyBase, color: '#FFFFFF', fontWeight: '600' },
+  authHint: { ...typography.caption, color: colors.textTertiary, textAlign: 'center', marginTop: spacing.xs },
   logoutBtn: { height: 48, borderRadius: 24, borderWidth: 1, borderColor: colors.error, justifyContent: 'center', alignItems: 'center', marginBottom: spacing.lg },
   logoutBtnText: { ...typography.bodyBase, color: colors.error, fontWeight: '600' },
   sectionTitle: { ...typography.caption, color: colors.textTertiary, marginBottom: spacing.sm, marginTop: spacing.md },

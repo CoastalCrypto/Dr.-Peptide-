@@ -17,6 +17,7 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.peptrackpro.app",
       "buildNumber": "1",
+      "usesAppleSignIn": true,
       "config": {
         "usesNonExemptEncryption": false
       },
@@ -79,7 +80,8 @@
         }
       ],
       "expo-font",
-      "expo-web-browser"
+      "expo-web-browser",
+      "expo-apple-authentication"
     ],
     "experiments": {
       "typedRoutes": true
