@@ -366,16 +366,28 @@ All-in-one health companion app for researching, calculating dosages, tracking u
 - [x] Contact email in privacy policy
 - [x] Age rating disclosure (17+)
 - [x] Medical disclaimers throughout
+- [x] **Sign in with Apple — fully implemented + verified server-side (Feb 28, 2026)**
+- [x] **References/citations modal linked from Peptide Detail page (Guideline 1.4.1)**
+
+### Apple Rejection Fixes — Iteration 14 (Feb 28, 2026):
+- **Guideline 2.1(a) "Sign in with Apple did not result in signing in"**:
+  - Added backend endpoint `POST /api/auth/apple` that verifies Apple's ES256-signed identityToken against Apple's JWKS (https://appleid.apple.com/auth/keys), validates audience (`APPLE_BUNDLE_ID=com.peptrackpro.app`) and issuer (`https://appleid.apple.com`), upserts the user by stable `apple_sub`, and issues our own session_token (cookie + body).
+  - Added `loginWithApple()` to `AuthContext` that POSTs Apple credentials to the backend and updates global user state.
+  - Wired `handleAppleAuth` in `profile.tsx` to call `loginWithApple` (previously it was a placeholder that only saved local state — root cause of the iPad rejection).
+  - Updated `api.ts` to attach the stored `session_token` as `Authorization: Bearer` header on native iOS (cookies don't always persist on RN native).
+- **Guideline 1.4.1 Medical Citations**: Added "View Sources & Citations" button on Peptide Detail page (`/app/frontend/app/peptide/[id].tsx`) that opens the existing ReferencesModal.
 
 ### Files for Submission:
 - `/app/APPLE_REVIEW_GUIDE.md` - Test account guide for Apple reviewers
+- `/app/EAS_BUILD_INSTRUCTIONS.md` - **NEW**: Step-by-step EAS build + resubmit commands
 - `/app/frontend/assets/images/` - App icons and screenshots
 
-### Still Needed (External):
+### Still Needed (External — user actions):
 - [ ] Landing page at peptrackpro.com
 - [ ] Privacy policy hosted at yourdomain.com/privacy
-- [ ] Screen recordings for complex features
-- [ ] Apple Developer Account setup
+- [ ] Trigger new EAS iOS build (see `/app/EAS_BUILD_INSTRUCTIONS.md`)
+- [ ] Configure App Store Connect Support URL (currently using https://github.com/CoastalCrypto/Dr.-Peptide-)
+- [ ] Submit new build to Apple for review
 
 ---
 
