@@ -15,7 +15,7 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.peptrackpro.app",
+      "bundleIdentifier": "app.emergent.peptideresearch937747082",
       "buildNumber": "2",
       "usesAppleSignIn": true,
       "config": {
