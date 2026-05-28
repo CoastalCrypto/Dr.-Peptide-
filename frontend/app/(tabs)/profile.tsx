@@ -30,7 +30,7 @@ interface ProfileScreenProps {
 
 export default function ProfileScreen({ embedded = false }: ProfileScreenProps) {
   const { colors, mode, setMode, isDark } = useTheme();
-  const { user, isAuthenticated, login, logout, isLoading: authLoading } = useAuth();
+  const { user, isAuthenticated, login, loginWithApple, logout, isLoading: authLoading } = useAuth();
   const { checkLockStatus } = useAppLock();
   const router = useRouter();
   const [settings, setSettings] = useState<Settings>({ weightUnit: 'lbs', measureUnit: 'inches', notifications: true });
@@ -354,32 +354,36 @@ export default function ProfileScreen({ embedded = false }: ProfileScreenProps) 
           AppleAuthentication.AppleAuthenticationScope.EMAIL,
         ],
       });
-      
-      // Process the Apple credential
-      // The credential contains: user, email, fullName, identityToken, authorizationCode
-      if (credential.user) {
-        // Create a user object similar to Google auth
-        const appleUser = {
-          id: credential.user,
-          email: credential.email || 'Apple User',
-          name: credential.fullName?.givenName 
-            ? `${credential.fullName.givenName} ${credential.fullName.familyName || ''}`.trim()
-            : 'Apple User',
-          provider: 'apple',
-        };
-        
-        // Store Apple user similar to Google auth
-        await Storage.set('peptrack_apple_user', appleUser);
-        
-        // You would typically send the identityToken to your backend for verification
-        Alert.alert('Success', 'Signed in with Apple successfully!');
-      }
-    } catch (error: any) {
-      if (error.code === 'ERR_REQUEST_CANCELED') {
-        // User cancelled the sign in
+
+      if (!credential.identityToken) {
+        Alert.alert('Sign In Failed', 'Apple did not return an identity token. Please try again.');
         return;
       }
-      Alert.alert('Sign In Failed', 'Could not sign in with Apple. Please try again.');
+
+      // Apple sends fullName + email only on first sign-in for this app/Apple-ID pair.
+      const fullName = credential.fullName?.givenName
+        ? `${credential.fullName.givenName} ${credential.fullName.familyName || ''}`.trim()
+        : null;
+
+      const loggedInUser = await loginWithApple({
+        identityToken: credential.identityToken,
+        authorizationCode: credential.authorizationCode,
+        email: credential.email,
+        fullName,
+      });
+
+      // Sync status will refresh via useEffect on isAuthenticated change
+      Alert.alert('Welcome', `Signed in as ${loggedInUser.name || loggedInUser.email}.`);
+    } catch (error: any) {
+      if (error?.code === 'ERR_REQUEST_CANCELED' || error?.code === 'ERR_CANCELED') {
+        // User cancelled — silent.
+        return;
+      }
+      console.error('Apple sign-in error:', error);
+      const msg = error?.message?.includes('401')
+        ? 'Apple sign-in could not be verified. Please try again.'
+        : 'Could not sign in with Apple. Please try again.';
+      Alert.alert('Sign In Failed', msg);
     }
   };
 

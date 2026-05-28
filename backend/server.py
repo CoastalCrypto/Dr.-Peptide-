@@ -10,6 +10,8 @@ from typing import List, Optional
 import uuid
 from datetime import datetime, timezone, timedelta
 import requests
+import jwt as pyjwt
+from jwt import PyJWKClient
 from services.openfda import search_medications, get_medication_details
 
 ROOT_DIR = Path(__file__).parent
@@ -40,6 +42,12 @@ logger = logging.getLogger(__name__)
 
 class AuthSessionRequest(BaseModel):
     session_id: str
+
+class AppleAuthRequest(BaseModel):
+    identity_token: str
+    authorization_code: Optional[str] = None
+    email: Optional[str] = None
+    full_name: Optional[str] = None  # e.g. "John Doe", populated on first sign-in
 
 class AiAskRequest(BaseModel):
     question: str
@@ -163,6 +171,139 @@ async def auth_session(req: AuthSessionRequest, response: Response):
     except Exception as e:
         logger.error(f"Auth error: {e}")
         raise HTTPException(status_code=500, detail="Authentication failed")
+
+# ==================== Apple Sign-In ====================
+# Apple identity tokens are signed JWTs (ES256). We verify them against Apple's JWKS
+# and then create/find a user in our DB and issue our own session token.
+
+APPLE_JWKS_URL = "https://appleid.apple.com/auth/keys"
+APPLE_ISSUER = "https://appleid.apple.com"
+# Bundle identifier configured in expo app.json -> ios.bundleIdentifier
+APPLE_BUNDLE_ID = os.environ.get("APPLE_BUNDLE_ID", "com.peptrackpro.app")
+
+_apple_jwk_client: Optional[PyJWKClient] = None
+
+def _get_apple_jwk_client() -> PyJWKClient:
+    global _apple_jwk_client
+    if _apple_jwk_client is None:
+        _apple_jwk_client = PyJWKClient(APPLE_JWKS_URL)
+    return _apple_jwk_client
+
+
+def verify_apple_identity_token(identity_token: str) -> dict:
+    """Verify Apple identityToken (ES256 JWT) against Apple's JWKS.
+    Returns the decoded payload dict on success, raises HTTPException otherwise.
+    """
+    try:
+        jwk_client = _get_apple_jwk_client()
+        signing_key = jwk_client.get_signing_key_from_jwt(identity_token).key
+    except Exception as e:
+        logger.error(f"Failed to fetch Apple signing key: {e}")
+        raise HTTPException(status_code=401, detail="Unable to verify Apple sign-in")
+
+    try:
+        payload = pyjwt.decode(
+            identity_token,
+            signing_key,
+            algorithms=["ES256"],
+            audience=APPLE_BUNDLE_ID,
+            issuer=APPLE_ISSUER,
+        )
+        return payload
+    except pyjwt.ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="Apple identity token expired")
+    except pyjwt.InvalidAudienceError:
+        logger.error(f"Apple token audience mismatch (expected {APPLE_BUNDLE_ID})")
+        raise HTTPException(status_code=401, detail="Invalid Apple sign-in audience")
+    except pyjwt.InvalidIssuerError:
+        raise HTTPException(status_code=401, detail="Invalid Apple sign-in issuer")
+    except pyjwt.InvalidTokenError as e:
+        logger.error(f"Invalid Apple identity token: {e}")
+        raise HTTPException(status_code=401, detail="Invalid Apple sign-in token")
+
+
+@api_router.post("/auth/apple")
+async def auth_apple(req: AppleAuthRequest, response: Response):
+    """Sign in with Apple. Verifies Apple identityToken, creates/looks-up user,
+    issues our own session_token cookie + returns user data.
+    """
+    try:
+        claims = verify_apple_identity_token(req.identity_token)
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Apple auth verification failed: {e}")
+        raise HTTPException(status_code=401, detail="Apple sign-in verification failed")
+
+    apple_sub = claims.get("sub")
+    if not apple_sub:
+        raise HTTPException(status_code=401, detail="Apple token missing user identifier")
+
+    # Email comes from token on first sign-in OR may be passed by client (first sign-in only).
+    email = claims.get("email") or req.email
+    name = req.full_name or (email.split("@")[0] if email else "Apple User")
+
+    # Lookup by Apple sub first (most stable), then fall back to email.
+    existing = await db.users.find_one({"apple_sub": apple_sub}, {"_id": 0})
+    if not existing and email:
+        existing = await db.users.find_one({"email": email}, {"_id": 0})
+
+    if existing:
+        user_id = existing["user_id"]
+        update_fields = {
+            "apple_sub": apple_sub,
+            "last_login_at": datetime.now(timezone.utc),
+        }
+        # Only update name/email if we have them and they were missing before
+        if name and not existing.get("name"):
+            update_fields["name"] = name
+        if email and not existing.get("email"):
+            update_fields["email"] = email
+        await db.users.update_one({"user_id": user_id}, {"$set": update_fields})
+        # Re-fetch updated user
+        existing = await db.users.find_one({"user_id": user_id}, {"_id": 0})
+        user_email = existing.get("email") or email or ""
+        user_name = existing.get("name") or name
+        user_picture = existing.get("picture", "")
+    else:
+        user_id = f"user_{uuid.uuid4().hex[:12]}"
+        # Synthesize an email if Apple withheld it (e.g. relay was set up before
+        # and not provided again on subsequent sign-ins) to satisfy unique index.
+        user_email = email or f"{apple_sub}@privaterelay.appleid.com"
+        await db.users.insert_one({
+            "user_id": user_id,
+            "email": user_email,
+            "name": name,
+            "picture": "",
+            "apple_sub": apple_sub,
+            "provider": "apple",
+            "created_at": datetime.now(timezone.utc),
+            "last_login_at": datetime.now(timezone.utc),
+        })
+        user_name = name
+        user_picture = ""
+
+    # Issue our own session token (same shape as Google flow)
+    session_token = f"session_{uuid.uuid4().hex}"
+    await db.user_sessions.insert_one({
+        "user_id": user_id,
+        "session_token": session_token,
+        "expires_at": datetime.now(timezone.utc) + timedelta(days=7),
+        "created_at": datetime.now(timezone.utc),
+    })
+    response.set_cookie(
+        key="session_token", value=session_token,
+        httponly=True, secure=True, samesite="none", path="/", max_age=604800
+    )
+    logger.info(f"Apple sign-in successful for user_id={user_id} apple_sub={apple_sub[:10]}...")
+    return {
+        "user_id": user_id,
+        "email": user_email,
+        "name": user_name,
+        "picture": user_picture,
+        "session_token": session_token,  # for native clients that can't rely on cookies
+    }
+
 
 @api_router.get("/auth/me")
 async def auth_me(request: Request):
@@ -1042,6 +1183,7 @@ async def startup_db_client():
         # Create indexes for production query performance
         await db.users.create_index("user_id", unique=True)
         await db.users.create_index("email", unique=True)
+        await db.users.create_index("apple_sub", sparse=True)
         await db.user_sessions.create_index("session_token", unique=True)
         await db.user_sessions.create_index("user_id")
         await db.user_sessions.create_index("expires_at", expireAfterSeconds=0)

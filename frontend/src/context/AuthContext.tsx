@@ -10,11 +10,19 @@ export interface User {
   picture?: string;
 }
 
+export interface AppleCredentialPayload {
+  identityToken: string;
+  authorizationCode?: string | null;
+  email?: string | null;
+  fullName?: string | null;
+}
+
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   isAuthenticated: boolean;
   login: () => void;
+  loginWithApple: (credential: AppleCredentialPayload) => Promise<User>;
   logout: () => Promise<void>;
   processAuthCallback: (sessionId: string) => Promise<boolean>;
   refreshUser: () => Promise<void>;
@@ -96,7 +104,40 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     
     setUser(null);
     await Storage.remove(KEYS.USER);
+    await Storage.remove('peptrack_session_token');
     setSyncStatus('idle');
+  }, []);
+
+  const loginWithApple = useCallback(async (credential: AppleCredentialPayload): Promise<User> => {
+    setIsLoading(true);
+    try {
+      const body = {
+        identity_token: credential.identityToken,
+        authorization_code: credential.authorizationCode || null,
+        email: credential.email || null,
+        full_name: credential.fullName || null,
+      };
+      const userData: User & { session_token?: string } = await api.post('/api/auth/apple', body);
+
+      // On native iOS, cookies may not persist reliably across app launches.
+      // Persist the session_token so we can attach it as Authorization: Bearer.
+      if (userData.session_token) {
+        await Storage.set('peptrack_session_token', userData.session_token);
+      }
+
+      const cleanUser: User = {
+        user_id: userData.user_id,
+        email: userData.email,
+        name: userData.name,
+        picture: userData.picture,
+      };
+
+      setUser(cleanUser);
+      await Storage.set(KEYS.USER, cleanUser);
+      return cleanUser;
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
 
   const processAuthCallback = useCallback(async (sessionId: string): Promise<boolean> => {
@@ -124,6 +165,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isLoading,
         isAuthenticated: !!user,
         login,
+        loginWithApple,
         logout,
         processAuthCallback,
         refreshUser,

@@ -5,11 +5,13 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, typography, spacing } from '../../src/theme';
 import { peptides as bundledPeptides, Peptide } from '../../src/data/peptides';
 import { Storage, KEYS } from '../../src/utils/storage';
+import { ReferencesModal } from '../../src/components/ReferencesModal';
 
 export default function PeptideDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const [peptide, setPeptide] = useState<Peptide | undefined>(bundledPeptides.find(p => p.id === id));
+  const [showReferences, setShowReferences] = useState(false);
 
   useEffect(() => {
     if (!peptide) {
@@ -127,6 +129,31 @@ export default function PeptideDetailScreen() {
           <Text style={styles.bodyText}>{peptide.storage}</Text>
         </Section>
 
+        {/* Medical Citations / References — required for Apple Guideline 1.4.1 */}
+        <TouchableOpacity
+          testID="view-sources-btn"
+          style={styles.referencesBtn}
+          onPress={() => setShowReferences(true)}
+          activeOpacity={0.7}
+        >
+          <MaterialCommunityIcons name="book-open-page-variant" size={20} color={colors.accent} />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.referencesBtnTitle}>View Sources & Citations</Text>
+            <Text style={styles.referencesBtnSubtitle}>
+              Information compiled from peer-reviewed scientific literature & official databases
+            </Text>
+          </View>
+          <MaterialCommunityIcons name="chevron-right" size={20} color={colors.textTertiary} />
+        </TouchableOpacity>
+
+        <View style={styles.medicalDisclaimer}>
+          <MaterialCommunityIcons name="shield-alert-outline" size={16} color={colors.warning} />
+          <Text style={styles.medicalDisclaimerText}>
+            Educational reference only. This information does not constitute medical advice.
+            Always consult a qualified healthcare professional before using any peptide.
+          </Text>
+        </View>
+
         <View style={styles.actionBtns}>
           <TouchableOpacity testID="quick-calc-btn" style={styles.calcBtn} onPress={quickCalc}>
             <MaterialCommunityIcons name="calculator" size={20} color={colors.primaryForeground} />
@@ -138,6 +165,8 @@ export default function PeptideDetailScreen() {
           </TouchableOpacity>
         </View>
       </ScrollView>
+
+      <ReferencesModal visible={showReferences} onClose={() => setShowReferences(false)} />
     </SafeAreaView>
   );
 }
@@ -197,4 +226,32 @@ const styles = StyleSheet.create({
   calcBtnText: { ...typography.bodyBase, color: colors.primaryForeground, fontWeight: '700' },
   trackerBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: colors.surface, height: 52, borderRadius: 26, gap: 8, borderWidth: 1, borderColor: colors.accent },
   trackerBtnText: { ...typography.bodyBase, color: colors.accent, fontWeight: '700' },
+  referencesBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    borderRadius: 12,
+    padding: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.accent,
+    gap: 12,
+    marginBottom: spacing.md,
+  },
+  referencesBtnTitle: { ...typography.bodyBase, color: colors.accent, fontWeight: '700' },
+  referencesBtnSubtitle: { ...typography.caption, color: colors.textTertiary, marginTop: 2, lineHeight: 14 },
+  medicalDisclaimer: {
+    flexDirection: 'row',
+    backgroundColor: 'rgba(255,209,102,0.1)',
+    borderRadius: 10,
+    padding: spacing.sm,
+    gap: 8,
+    marginBottom: spacing.md,
+  },
+  medicalDisclaimerText: {
+    ...typography.bodySm,
+    color: colors.textTertiary,
+    flex: 1,
+    fontSize: 11,
+    lineHeight: 15,
+  },
 });

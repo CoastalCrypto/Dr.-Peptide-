@@ -1,0 +1,39 @@
+{
+  "summary": "Validated Apple Sign-In server-side identity token verification flow (/api/auth/apple) and confirmed no regressions on existing endpoints. All 5 existing pytest unit tests pass (mocked JWKS) and 14 new curl-style regression tests pass against the live preview URL. Apple verification properly rejects missing/invalid/wrong-audience/expired tokens with appropriate 401/422 codes, and the unit test confirms creating a new user + re-login with same Apple sub resolves to same user_id with preserved email/name.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "/api/auth/apple", "issue": "When given a completely non-JWT string (e.g. 'not.a.jwt'), the error message is 'Unable to verify Apple sign-in' (from the JWKS lookup step) rather than 'Invalid Apple sign-in token'. Both contain 'Apple' so existing tests pass and behaviour is acceptable, but a unified 'Invalid Apple sign-in token' for all malformed inputs would be cleaner UX."},
+      {"endpoint": "server.py:1177,1200", "issue": "Using deprecated @app.on_event('startup'/'shutdown') — should migrate to FastAPI lifespan event handlers (DeprecationWarning emitted on every test run)."}
+    ]
+  },
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": [
+    "/app/backend/tests/test_apple_auth.py",
+    "/app/backend/tests/test_apple_auth_curl.py",
+    "/app/test_reports/pytest/apple_auth_results.xml",
+    "/app/test_reports/pytest/apple_auth_curl_results.xml",
+    "/app/test_reports/pytest/apple_auth_full_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Apple identity token verification (server.py lines 193-222) correctly validates ES256 signature against JWKS, checks audience=APPLE_BUNDLE_ID, checks issuer=https://appleid.apple.com, and handles expired/invalid token cases with distinct HTTP 401 messages — matches Apple's recommended server-side verification flow.",
+    "User lookup by apple_sub first then email (lines 247-249) is the correct precedence — Apple sub is stable across name/email changes.",
+    "Synthesized fallback email f'{apple_sub}@privaterelay.appleid.com' (line 272) is sensible for cases where Apple withholds email, but worth verifying there's no unique-index conflict if user_email already has that exact value (edge case).",
+    "Bearer token support in /api/auth/me (lines 311-313) is correct and necessary for native iOS clients — addressed in review request.",
+    "Cookie attrs samesite='none' + secure=True are appropriate for cross-origin native usage. httponly=True is correct.",
+    "Minor: _apple_jwk_client global cache is module-level; if Apple rotates JWKS we depend on PyJWKClient's internal TTL refresh, which is fine in practice.",
+    "Minor: server.py is 1203 lines — exceeds 700-line guideline; consider splitting auth/AI/tracker into separate routers.",
+    "Deprecated @app.on_event handlers (startup/shutdown) — migrate to lifespan handlers."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_apple_auth_curl.py (NEW - 14 regression/edge-case tests via public URL)"
+  ],
+  "success_rate": {"backend": "100%", "frontend": "N/A (skipped per instruction)"},
+  "test_credentials": "N/A — Apple Sign-In flow does not use stored test credentials. Unit tests mock JWKS with a generated ES256 keypair to produce valid tokens for backend verification. /app/memory/test_credentials.md does NOT exist.",
+  "seed_data_creation": "None. Unit tests create + clean up users with apple_sub prefix '001.test.*' after each test.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Apple Sign-In endpoint /api/auth/apple is fully validated: 5 mocked-JWKS unit tests in /app/backend/tests/test_apple_auth.py (rejection of missing/invalid/wrong-aud/expired tokens; create-user-then-relogin flow) + 14 live-URL regression tests in /app/backend/tests/test_apple_auth_curl.py. Server config: APPLE_BUNDLE_ID=com.peptrackpro.app, JWKS=https://appleid.apple.com/auth/keys, ISSUER=https://appleid.apple.com. Cookie + body session_token issued. Bearer token accepted on /api/auth/me. NOTE: When running async tests across multiple files with motor, you'll hit 'Event loop is closed' due to motor caching loop reference — this is test infra only, not a production bug. Run async test files individually if needed.",
+  "rca of the issue": "N/A — no production bugs found. The endpoint correctly addresses Apple App Store Guideline 2.1(a) rejection by performing real server-side ES256 JWT verification against Apple's JWKS, upserting user by stable apple_sub, and returning session_token in both cookie and response body so native iOS clients (which can't always persist cookies) can use Authorization: Bearer on subsequent requests."
+}

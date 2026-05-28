@@ -1,4 +1,6 @@
 import { RecurringItem, RecurringDoseLog, DoseStatus } from '../types/recurring';
+import { Storage } from './storage';
+import { Platform } from 'react-native';
 
 const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL || '';
 
@@ -6,8 +8,27 @@ async function apiRequest(endpoint: string, options?: RequestInit) {
   if (!BACKEND_URL) {
     throw new Error('Backend URL not configured. Set EXPO_PUBLIC_BACKEND_URL.');
   }
+
+  // On native platforms cookies may not persist across app launches reliably,
+  // so we additionally attach a stored session token as a Bearer Authorization header.
+  // The backend (/api/auth/me etc.) accepts either cookie or Authorization header.
+  const headers: Record<string, string> = {
+    ...(options?.headers as Record<string, string> | undefined),
+  };
+  if (Platform.OS !== 'web') {
+    try {
+      const token = await Storage.get<string>('peptrack_session_token');
+      if (token && !headers['Authorization']) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+    } catch {
+      // ignore storage errors
+    }
+  }
+
   const res = await fetch(`${BACKEND_URL}${endpoint}`, {
     ...options,
+    headers,
     credentials: 'include',
   });
   if (!res.ok) throw new Error(`API ${res.status}`);
